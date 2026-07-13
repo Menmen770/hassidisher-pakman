@@ -12,21 +12,41 @@ public final class GameMap {
     private final String title;
     private final String subtitle;
     private final String difficulty;
+    private final String backgroundFile;
+    private final boolean locked;
     private final String[] tiles;
 
     public GameMap(String id, String title, String subtitle, String difficulty, String[] tiles) {
+        this(id, title, subtitle, difficulty, "bg.png", false, tiles);
+    }
+
+    public GameMap(
+        String id,
+        String title,
+        String subtitle,
+        String difficulty,
+        String backgroundFile,
+        boolean locked,
+        String[] tiles
+    ) {
         this.id = Objects.requireNonNull(id);
         this.title = Objects.requireNonNull(title);
         this.subtitle = Objects.requireNonNull(subtitle);
         this.difficulty = Objects.requireNonNull(difficulty);
+        this.backgroundFile = Objects.requireNonNull(backgroundFile);
+        this.locked = locked;
         this.tiles = tiles.clone();
-        validate();
+        if (!locked) {
+            validate();
+        }
     }
 
     public String getId() { return id; }
     public String getTitle() { return title; }
     public String getSubtitle() { return subtitle; }
     public String getDifficulty() { return difficulty; }
+    public String getBackgroundFile() { return backgroundFile; }
+    public boolean isLocked() { return locked; }
     public String[] getTiles() { return tiles.clone(); }
     public int getRows() { return tiles.length; }
     public int getCols() { return tiles[0].length(); }
@@ -80,7 +100,6 @@ public final class GameMap {
             for (int[] d : dirs) {
                 int nr = cur[0] + d[0];
                 int nc = cur[1] + d[1];
-                // Wrap-around tunnels (open edges connect opposite sides)
                 if (nr < 0) {
                     nr = rows - 1;
                 } else if (nr >= rows) {

@@ -4,14 +4,17 @@ import java.awt.Image;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.ImageIcon;
 
 /**
- * Loads game images. Background is ALWAYS project-root bg.png — nothing else.
+ * Loads game images. Map backgrounds are same-size files in the project root (bg.png, bg2.png, …).
  */
 public final class AssetManager {
     private static AssetManager instance;
 
+    /** Default menu / first-stage backdrop. */
     public final Image background;
     public final Image wall;
     public final Image floor;
@@ -27,8 +30,13 @@ public final class AssetManager {
     public final Image cherry;
     public final Image powerFood;
 
+    private final Map<String, Image> backgroundCache = new HashMap<>();
+
     private AssetManager() {
-        background = loadBackgroundOnly();
+        background = loadBackgroundFile("bg.png");
+        if (background != null) {
+            backgroundCache.put("bg.png", background);
+        }
         wall = load("wall.png");
         floor = load("floor.png");
         heart = load("heart.png");
@@ -56,18 +64,29 @@ public final class AssetManager {
         instance = null;
     }
 
-    /** Only the root bg.png file — never assets/ or classpath copies. */
-    private static Image loadBackgroundOnly() {
-        File file = new File("bg.png");
-        if (!file.isFile()) {
-            file = new File(System.getProperty("user.dir"), "bg.png");
+    /** Same-size stage backdrop by file name (bg.png, bg2.png, …). */
+    public Image backgroundFor(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return background;
         }
-        if (!file.isFile()) {
-            System.err.println("Missing required file: bg.png in project root");
-            return null;
+        return backgroundCache.computeIfAbsent(fileName, AssetManager::loadBackgroundFile);
+    }
+
+    private static Image loadBackgroundFile(String fileName) {
+        Path[] candidates = {
+            Paths.get(fileName),
+            Paths.get(System.getProperty("user.dir"), fileName),
+            Paths.get("assets", fileName)
+        };
+        for (Path path : candidates) {
+            File file = path.toFile();
+            if (file.isFile()) {
+                System.out.println("Background: " + file.getAbsolutePath());
+                return new ImageIcon(file.getAbsolutePath()).getImage();
+            }
         }
-        System.out.println("Background: " + file.getAbsolutePath());
-        return new ImageIcon(file.getAbsolutePath()).getImage();
+        System.err.println("Missing background: " + fileName);
+        return null;
     }
 
     private static Image load(String fileName) {

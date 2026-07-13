@@ -87,10 +87,14 @@ public class MainFrame extends JFrame {
     }
 
     private void startGame(GameMap map) {
+        if (map == null || map.isLocked()) {
+            return;
+        }
         // Show the game card first so layout has a real size, then start the session
         showScreen(GAME);
 
         gamePanel.startSession(map);
+        setTitle("Hasidic Maze — " + map.getTitle() + " (" + map.getBackgroundFile() + ")");
         Dimension gameSize = gamePanel.getPreferredSize();
 
         gameHost.setPreferredSize(gameSize);

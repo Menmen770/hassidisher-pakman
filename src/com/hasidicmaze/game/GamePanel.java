@@ -32,6 +32,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private final AssetManager assets = AssetManager.get();
     private final Listener listener;
     private GameMap gameMap;
+    /** Per-map backdrop (same pixel size across stages so grid layout stays shared). */
+    private Image sessionBackground;
 
     /**
      * Canvas matches bg.png aspect ratio (scaled to fit screen).
@@ -101,8 +103,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         this.gameMap = map;
         this.rowCount = map.getRows();
         this.columnCount = map.getCols();
+        this.sessionBackground = assets.backgroundFor(map.getBackgroundFile());
+        if (this.sessionBackground == null) {
+            this.sessionBackground = assets.background;
+        }
 
-        // Size the board from bg.png at half display size; grid sized separately
+        // Size the board from stage background; grid origin/size shared across same-size bgs
         fitCanvasToBackground();
         int maxTile = Math.min(
             Math.max(12, gameAreaWidth / Math.max(1, columnCount)),
@@ -143,9 +149,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         repaint();
     }
 
-    /** Display bg.png at half size. Grid is independent and can be scaled separately. */
+    /** Display stage background at fixed scale. Grid is independent and can be scaled separately. */
     private void fitCanvasToBackground() {
-        Image bg = assets.background;
+        Image bg = sessionBackground != null ? sessionBackground : assets.background;
         if (bg == null) {
             gameAreaWidth = 640;
             boardHeight = 720;
@@ -363,9 +369,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         g2.translate(ox, oy);
         g2.scale(scale, scale);
 
-        if (assets.background != null) {
+        Image bg = sessionBackground != null ? sessionBackground : assets.background;
+        if (bg != null) {
             // Shift art up slightly so the maze sits lower on the floor (size unchanged)
-            g2.drawImage(assets.background, 0, -bgShiftUp, gameAreaWidth, boardHeight + bgShiftUp, null);
+            g2.drawImage(bg, 0, -bgShiftUp, gameAreaWidth, boardHeight + bgShiftUp, null);
         } else {
             g2.setColor(Theme.INK_SOFT);
             g2.fillRect(0, 0, gameAreaWidth, boardHeight);

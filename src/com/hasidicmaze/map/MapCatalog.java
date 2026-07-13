@@ -1,18 +1,21 @@
 package com.hasidicmaze.map;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * Built-in maze catalog — every map is BFS-validated (with wrap-around tunnels).
- * 21 rows × 19 cols (including top and bottom wall rows).
+ * Six stages — each uses a same-size background so grid scale/origin stay shared.
+ * 0 = wall, 1 = open, 8 = player, 9 = ghost (placed as r/b/p/o in order).
  */
 public final class MapCatalog {
     private static final List<GameMap> MAPS = Arrays.asList(
-        courtyard(),
-        twinHalls(),
-        spiralGate(),
-        crossroads()
+        sederIyuna(),
+        sederGirsa(),
+        lockedSlot(3, "סדר שלישי"),
+        lockedSlot(4, "סדר רביעי"),
+        lockedSlot(5, "סדר חמישי"),
+        lockedSlot(6, "סדר שישי")
     );
 
     private MapCatalog() {}
@@ -28,24 +31,59 @@ public final class MapCatalog {
             .orElse(MAPS.get(0));
     }
 
-    /**
-     * User-traced layout from the bookshelf background (0=wall, 1=open).
-     * Four wrap holes: top/bottom col 15, left/right on tunnel row 11.
-     */
-    private static GameMap courtyard() {
-        String[] binary = {
+    /** סדר עיונא — קל — bg2.png (המפה שעבדת עליה) */
+    private static GameMap sederIyuna() {
+        String[] digits = {
+            "0000000000000000000",
+            "0111111110111111110",
+            "0100100010100010010",
+            "0111111111111111110",
+            "0100101000001010010",
+            "0111101111111011110",
+            "0000101000001001000",
+            "0000101111111111000",
+            "0111111100001001110",
+            "0001001011101111000",
+            "0001111990991001000",
+            "1111001001001001111",
+            "0001111111111111000",
+            "0001000101010001000",
+            "0111111118111111110",
+            "0010010001000100100",
+            "0111110111110111110",
+            "0001011100011101000",
+            "0111000110110001110",
+            "0001111100011111000",
+            "0000000000000000000"
+        };
+        return fromDigits(
+            "iyuna",
+            "סדר עיונא",
+            "הרקע והמחסומים של bg2",
+            "קל",
+            "bg2.png",
+            false,
+            digits,
+            null,
+            -1, -1
+        );
+    }
+
+    /** סדר גירסא — קשה — bg.png + המפה הראשונה שהתאמנו */
+    private static GameMap sederGirsa() {
+        String[] digits = {
             "0000000000000001000",
             "0001110100111111110",
             "0001011100100010010",
             "0111011111111111110",
-            "0001111111110110000",
+            "0001111001110110000",
             "0111111111110111110",
             "0110011111111111000",
             "0011111001101111000",
             "0111001111111001110",
             "0011111110111111100",
             "0011111110111111110",
-            "1111001111110011111", // side tunnel row
+            "1111001111110011111",
             "0001111001011111110",
             "0001001111011100010",
             "0111111111111111110",
@@ -56,44 +94,131 @@ public final class MapCatalog {
             "0001111110111011110",
             "0000000000000001000"
         };
+        return fromDigits(
+            "girsa",
+            "סדר גירסא",
+            "החצר הגדולה — המפה הראשונה",
+            "קשה",
+            "bg.png",
+            false,
+            digits,
+            new int[][]{{11, 7}, {11, 8}, {11, 9}, {11, 10}},
+            15, 9
+        );
+    }
 
-        char[][] grid = new char[21][19];
-        for (int r = 0; r < 21; r++) {
-            if (binary[r].length() != 19) {
-                throw new IllegalStateException("row " + r + " len=" + binary[r].length());
+    private static GameMap lockedSlot(int index, String title) {
+        return lockedSlot(index, title, "סגור");
+    }
+
+    private static GameMap lockedSlot(int index, String title, String difficulty) {
+        String[] stub = {
+            "XXXXXXXXXXXXXXXXXXX",
+            "X                 X",
+            "X XXXXXXXXXXXXXXX X",
+            "X X             X X",
+            "X X XXXXXXXXXXX X X",
+            "X X X         X X X",
+            "X X X XXXXXXX X X X",
+            "X X X X     X X X X",
+            "X X X X  P  X X X X",
+            "X X X X     X X X X",
+            "X X X XXXXXXX X X X",
+            "X X X         X X X",
+            "X X XXXXXXXXXXX X X",
+            "X X             X X",
+            "X XXXXXXXXXXXXXXX X",
+            "X                 X",
+            "XXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXX",
+            "XXXXXXXXXXXXXXXXXXX"
+        };
+        return new GameMap(
+            "locked-" + index,
+            title,
+            "בקרוב — השלב עדיין לא פתוח",
+            difficulty,
+            "bg2.png",
+            true,
+            stub
+        );
+    }
+
+    /**
+     * @param ghostCells optional explicit ghost cells; if null, read 9s from digits
+     * @param playerR/C  optional explicit player; if &lt;0, read 8 from digits
+     */
+    private static GameMap fromDigits(
+        String id,
+        String title,
+        String subtitle,
+        String difficulty,
+        String backgroundFile,
+        boolean locked,
+        String[] digits,
+        int[][] ghostCells,
+        int playerR,
+        int playerC
+    ) {
+        char[][] grid = new char[digits.length][digits[0].length()];
+        List<int[]> nines = new ArrayList<>();
+        int foundPR = -1;
+        int foundPC = -1;
+
+        for (int r = 0; r < digits.length; r++) {
+            if (digits[r].length() != digits[0].length()) {
+                throw new IllegalStateException(id + " row " + r + " bad length");
             }
-            for (int c = 0; c < 19; c++) {
-                grid[r][c] = binary[r].charAt(c) == '0' ? 'X' : ' ';
+            for (int c = 0; c < digits[r].length(); c++) {
+                char ch = digits[r].charAt(c);
+                switch (ch) {
+                    case '0' -> grid[r][c] = 'X';
+                    case '1' -> grid[r][c] = ' ';
+                    case '8' -> {
+                        grid[r][c] = ' ';
+                        foundPR = r;
+                        foundPC = c;
+                    }
+                    case '9' -> {
+                        grid[r][c] = ' ';
+                        nines.add(new int[]{r, c});
+                    }
+                    default -> throw new IllegalStateException(
+                        id + " bad char '" + ch + "' at (" + r + "," + c + ")");
+                }
             }
         }
 
-        // Four openings — one per side — for wrap to the opposite side
-        grid[0][15] = ' ';
-        grid[20][15] = ' ';
-        grid[11][0] = ' ';
-        grid[11][18] = ' ';
+        if (playerR >= 0 && playerC >= 0) {
+            place(grid, playerR, playerC, 'P');
+        } else if (foundPR >= 0) {
+            place(grid, foundPR, foundPC, 'P');
+        } else {
+            throw new IllegalStateException(id + ": missing player");
+        }
 
-        place(grid, 15, 9, 'P');
-        place(grid, 11, 7, 'r');
-        place(grid, 11, 8, 'b');
-        place(grid, 11, 9, 'p');
-        place(grid, 11, 10, 'o');
+        char[] ghostChars = {'r', 'b', 'p', 'o'};
+        if (ghostCells != null) {
+            for (int i = 0; i < ghostCells.length; i++) {
+                place(grid, ghostCells[i][0], ghostCells[i][1], ghostChars[i % ghostChars.length]);
+            }
+        } else {
+            for (int i = 0; i < nines.size(); i++) {
+                int[] cell = nines.get(i);
+                place(grid, cell[0], cell[1], ghostChars[i % ghostChars.length]);
+            }
+        }
 
-        // Seal open cells that aren't reachable yet (user will refine later)
         sealUnreachable(grid);
 
-        String[] tiles = new String[21];
-        for (int r = 0; r < 21; r++) {
+        String[] tiles = new String[grid.length];
+        for (int r = 0; r < grid.length; r++) {
             tiles[r] = new String(grid[r]);
         }
 
-        return new GameMap(
-            "courtyard",
-            "החצר הגדולה",
-            "מפת הרקע החדשה — חומות מסביב וארבעה מעברים",
-            "קל",
-            tiles
-        );
+        return new GameMap(id, title, subtitle, difficulty, backgroundFile, locked, tiles);
     }
 
     private static void sealUnreachable(char[][] grid) {
@@ -171,101 +296,5 @@ public final class MapCatalog {
             }
         }
         grid[r][c] = ch;
-    }
-
-    private static GameMap twinHalls() {
-        return new GameMap(
-            "twin-halls",
-            "שני האולמות",
-            "שני אגפים סימטריים — דורש תכנון מסלול",
-            "בינוני",
-            new String[]{
-                "XXXXXXXXXXXXXXXXXXX",
-                "X   X         X   X",
-                "X X X XXXXXXX X X X",
-                "X X             X X",
-                "X XXX X XXX X XXX X",
-                "X     X  X  X     X",
-                "XXX XXXX X XXXX XXX",
-                "    X         X    ",
-                "XXX X XXXrXXX X XXX",
-                "      b  P  op     ",
-                "XXX X XXXXXXX X XXX",
-                "    X         X    ",
-                "XXX XXXX X XXXX XXX",
-                "X     X  X  X     X",
-                "X XXX X XXX X XXX X",
-                "X X             X X",
-                "X X XXX X X XXX X X",
-                "X X   X  X  X   X X",
-                "X XXX X XXX X XXX X",
-                "X                 X",
-                "XXXXXXXXXXXXXXXXXXX"
-            }
-        );
-    }
-
-    private static GameMap spiralGate() {
-        return new GameMap(
-            "spiral-gate",
-            "שער הספירלה",
-            "טבעות מקושרות — מבוך צפוף ומאתגר",
-            "קשה",
-            new String[]{
-                "XXXXXXXXXXXXXXXXXXX",
-                "X                 X",
-                "X XXXXXXXXXXXXXX  X",
-                "X X              XX",
-                "X X XXXXXXXXXXXX  X",
-                "X X X            XX",
-                "X X X XXXXXXXXXX  X",
-                "X X X X        X XX",
-                "X X X X  rXXX  X  X",
-                "X   X   bPo    X XX",
-                "XXX X X        X  X",
-                "X   X XXXXXXXXXX XX",
-                "X X X             X",
-                "X X XXXXXXXXXXXXX X",
-                "X X               X",
-                "X XXXXXXXXXXXXXXX X",
-                "X X             X X",
-                "X X XXXXXXXXXXX X X",
-                "X X             X X",
-                "X                 X",
-                "XXXXXXXXXXXXXXXXXXX"
-            }
-        );
-    }
-
-    private static GameMap crossroads() {
-        return new GameMap(
-            "crossroads",
-            "צומת הדרכים",
-            "ארבעה חדרים וציר מרכזי — קצב מהיר",
-            "בינוני",
-            new String[]{
-                "XXXXXXXXXXXXXXXXXXX",
-                "X     X     X     X",
-                "X XXX X XXX X XXX X",
-                "X X           X X X",
-                "X X XXX   XXX X X X",
-                "X     X   X       X",
-                "XXX X XXXXXXX X XXX",
-                "    X    r    X    ",
-                "XXX X XXXXXXX X XXX",
-                "X      bPo        X",
-                "XXX X XXXXXXX X XXX",
-                "    X         X    ",
-                "XXX X XXXXXXX X XXX",
-                "X     X   X       X",
-                "X X XXX   XXX X X X",
-                "X X           X X X",
-                "X XXX X   X XXX X X",
-                "X     X   X       X",
-                "X XXXXXXXXXXXXXXX X",
-                "X                 X",
-                "XXXXXXXXXXXXXXXXXXX"
-            }
-        );
     }
 }
