@@ -5,7 +5,7 @@ import java.util.Random;
 import javax.swing.*;
 
 // המחלקה הראשית של המשחק - יורשת מ-JPanel ומממשת ממשקים להאזנה לאירועים
-public class PacMan extends JPanel implements ActionListener, KeyListener {
+public class PacMan extends JPanel implements ActionListener, KeyListener, MouseListener {
     // מחלקה פנימית שמייצגת בלוק/אובייקט במשחק (פקמן, רוחות, קירות, אוכל)
     class Block {
         int x; // מיקום אופקי
@@ -77,12 +77,23 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
     }
 //+++++++++++++++++++++++++++++++++++++++=
-    // הגדרות גודל הלוח והמשבצות
-    private int rowCount = 21; // מספר שורות בלוח
+    // *** הגדרות גודל - כאן אתה משנה את הכל! ***
+    
+    // 1. גודל הבלוקים (פקמן, רוחות, קירות)
+    private int tileSize = 32; // שנה כאן: יותר גדול = בלוקים גדולים, יותר קטן = בלוקים קטנים
+    
+    // 2. כמות משבצות במשחק
+    private int rowCount = 17; // מספר שורות בלוח (בלי קירות חיצוניים)
     private int columnCount = 19; // מספר עמודות בלוח
-    private int tileSize = 32; // גודל משבצת בפיקסלים
-    private int boardWidth = 642; // רוחב הלוח בפיקסלים - שנה כאן!
-    private int boardHeight = 715; // גובה הלוח בפיקסלים - שנה כאן!
+    
+    // 3. הזזת המשחק בתוך התמונה (כדי שיהיה באמצע)
+    private int offsetX = 3; // הזזה ימינה - ממזער את הרקע בצדדים
+    private int offsetY = 3; // הזזה למטה - ממזער את הרקע למעלה ולמטה
+    
+    // 4. גודל החלון (אוטומטי לפי הגדרות למעלה)
+    private int gameAreaWidth = columnCount * tileSize + offsetX * 2; // רוחב אזור המשחק
+    private int boardWidth = gameAreaWidth; // רוחב הלוח (בלי פאנל צדדי)
+    private int boardHeight = rowCount * tileSize + offsetY * 2 + 6; // גובה הלוח - ממזער רקע
 
     // תמונות של אלמנטים במשחק
     private Image floorImage; // תמונת רקע - רצפה
@@ -97,32 +108,29 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private Image pacmanDownImage; // פקמן מסתכל למטה
     private Image pacmanLeftImage; // פקמן מסתכל שמאלה
     private Image pacmanRightImage; // פקמן מסתכל ימינה
+    private Image heartImage; // תמונת לב לחיים
 
     // מפת המשחק - כל תו מייצג אלמנט שונה:
     // X = קיר, O = דלג (ריק), P = פקמן, ' ' = אוכל
     // רוחות: b = כחול, o = כתום, p = ורוד, r = אדום
     private String[] tileMap = {
-        "XXXXXXXXXXXXXXXXXXX",
-        "X        X        X",
+        "XXXXXXXXXXXXXXXX XX",
         "X XX XXX X XXX XX X",
         "X                 X",
         "X XX X XXXXX X XX X",
         "X    X   X   X    X",
         "XXXX XXX X XXX XXXX",
-        "OOOX X       X XOOO",
+        "   X X       X X   ",
         "XXXX X XXrXX X XXXX",
-        "O       bpo       O",
+        "         bpo       ",
         "XXXX X XXXXX X XXXX",
-        "OOOX X       X XOOO",
+        "   X X       X X   ",
         "XXXX X XXXXX X XXXX",
         "X        X        X",
         "X XX XXX X XXX XX X",
         "X  X     P     X  X",
         "XX X X XXXXX X X XX",
-        "X    X   X   X    X",
-        "X XXXXXX X XXXXXX X",
-        "X                 X",
-        "XXXXXXXXXXXXXXXXXXX" 
+        "XXXXXXXXXXXXXXXX XX"
     };
 
     // קבוצות של אובייקטים במשחק
@@ -135,15 +143,39 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     char[] directions = {'U', 'D', 'L', 'R'}; // מערך כיוונים אפשריים
     Random random = new Random(); // מחולל מספרים אקראיים
     int score = 0; // ניקוד השחקן
+    int totalFoodCount = 0; // סה"כ אוכל בהתחלה
     int lives = 3; // מספר החיים
     boolean gameOver = false; // האם המשחק הסתיים
+    boolean isPaused = false; // האם המשחק מושהה אחרי פסילה
     char nextDirection = 'R'; // הכיוון הבא שהשחקן רוצה לפנות אליו
+    
+    // מסך פתיחה ולוח תוצאות
+    boolean showStartScreen = true; // האם להציג מסך פתיחה
+    boolean showHighScores = false; // האם להציג לוח תוצאות
+    String[][] highScores = {
+        {"NOT.N.T", "481"},
+        {"MenMen", "411"},
+        {"Igor", "399"},
+        {"Shmuel", "350"},
+        {"Oded", "294"},
+        {"Eitan", "288"},
+        {"Nattai", "277"},
+        {"Dvir", "255"},
+        {"Shneor", "241"},
+        {"LeviYitzchak", "228"}
+    };
+    
+    // מיקום וגודל כפתור הסגירה
+    int closeButtonX;
+    int closeButtonY;
+    int closeButtonSize = 18;
 
     // בנאי - מאתחל את המשחק
     PacMan() {
         setPreferredSize(new Dimension(boardWidth, boardHeight)); // קובע את גודל הפאנל
         setBackground(Color.BLACK); // רקע שחור (גיבוי למקרה שהתמונה לא תיטען)
         addKeyListener(this); // מאזין ללחיצות מקלדת
+        addMouseListener(this); // מאזין ללחיצות עכבר
         setFocusable(true); // מאפשר לפאנל לקבל פוקוס
 
         // טעינת כל התמונות מהקבצים
@@ -158,6 +190,13 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         pacmanDownImage = new ImageIcon(getClass().getResource("./pacmanDown.png")).getImage();
         pacmanLeftImage = new ImageIcon(getClass().getResource("./pacmanLeft.png")).getImage();
         pacmanRightImage = new ImageIcon(getClass().getResource("./pacmanRight.png")).getImage();
+        
+        // טעינת תמונת הלב (אם קיימת)
+        try {
+            heartImage = new ImageIcon(getClass().getResource("./heart.png")).getImage();
+        } catch (Exception e) {
+            heartImage = null;
+        }
 
         loadMap(); // טוען את המפה
         // נותן לכל רוח כיוון אקראי בהתחלה
@@ -165,10 +204,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             char newDirection = directions[random.nextInt(4)];
             ghost.updateDirection(newDirection);
         }
-        // יצירת טיימר שמריץ את לולאת המשחק כל 50 מילישניות (20 פריימים לשנייה)
+        // יצירת טיימר שמריץ את לולאת המשחק כל 50 מילישניות (20 פריימים לשניה)
         gameLoop = new Timer(50, this); 
-        gameLoop.start(); // מתחיל את הטיימר
-
+        // הטיימר יתחיל רק לאחר לחיצה על רווח
     }
 
     // פונקציה שטוענת את המפה ויוצרת את כל האובייקטים
@@ -183,8 +221,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 String row = tileMap[r]; // השורה הנוכחית במפה
                 char tileMapChar = row.charAt(c); // התו במיקום הנוכחי
 
-                int x = c*tileSize + 16; // מיקום אופקי בפיקסלים + הזזה של 2 פיקסלים ימינה
-                int y = r*tileSize + 27; // מיקום אנכי בפיקסלים + הזזה של 2 פיקסלים למטה
+                int x = c*tileSize + offsetX ; // מיקום אופקי בפיקסלים + הזזה למרכז
+                int y = r*tileSize + offsetY +15; // מיקום אנכי בפיקסלים + הזזה למרכז
 
                 if (tileMapChar == 'X') { // אם זה קיר
                     Block wall = new Block(wallImage, x, y, tileSize, tileSize);
@@ -216,6 +254,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 }
             }
         }
+        totalFoodCount = foods.size(); // שומר את כמות האוכל ההתחלתית
     }
 
     // פונקציה שמציירת את הרכיבים (נקראת אוטומטית על ידי Swing)
@@ -226,11 +265,68 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
     // פונקציה שמצייר את כל האלמנטים של המשחק
     public void draw(Graphics g) {
-        // מצייר את תמונת הרקע (עם הארונות) על כל המסך
-        if (floorImage != null) {
-            // מצייר את התמונה בגודל מלא - מותאם לגודל הלוח
-            g.drawImage(floorImage, 0, 0, boardWidth, boardHeight, null);
+        // אם מסך הפתיחה מוצג
+        if (showStartScreen) {
+            drawStartScreen(g);
+            return;
         }
+        
+        // אם לוח התוצאות מוצג
+        if (showHighScores) {
+            drawHighScores(g);
+            return;
+        }
+        
+        // מצייר את תמונת הרקע (עם הארונות) רק על אזור המשחק - לא על הפאנל הצדדי
+        if (floorImage != null) {
+            // מצייר את התמונה רק על אזור המשחק (לא מותח לכל החלון)
+            g.drawImage(floorImage, 0, 0, gameAreaWidth, boardHeight, null);
+        }
+        
+        // טקסט ניקוד ולבבות בלי מלבן - למעלה בצד שמאל
+        int startX = 75; // 2.5 ס"מ זה בערך 75 פיקסלים (בהנחה של 96 DPI)
+        int startY = 3;
+        
+        // כפתור X לסגירת המשחק - בפינה השמאלית העליונה
+        closeButtonSize = 14; // כפתור קטן יותר
+        closeButtonX = 35; // 1 ס"מ ימינה (בערך 30 פיקסלים)
+        closeButtonY = 3;
+        
+        // רקע אדום לכפתור
+        g.setColor(new Color(220, 50, 50));
+        g.fillRoundRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize, 4, 4);
+        
+        // מסגרת כהה לכפתור
+        g.setColor(new Color(150, 30, 30));
+        g.drawRoundRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize, 4, 4);
+        
+        // X לבן בתוך הכפתור
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 11));
+        g.drawString("X", closeButtonX + 4, closeButtonY + 11);
+        
+        // ניקוד בפורמט "כמה אכלת\סה"כ"
+        g.setColor(Color.BLACK);
+        g.setFont(new Font("Arial", Font.BOLD, 13));
+        String scoreStr = score + "\\" + totalFoodCount;
+        g.drawString(scoreStr, startX, startY + 15);
+        int scoreWidth = g.getFontMetrics().stringWidth(scoreStr);
+        
+        // לבבות אחרי הניקוד עם רווח
+        int heartSize = 16;
+        int heartSpacing = 20;
+        int heartY = startY + 2;
+        int heartStartX = startX + scoreWidth + 15; // רווח גדול יותר אחרי הניקוד
+        
+        for (int i = 0; i < lives; i++) {
+            int heartX = heartStartX + (i * heartSpacing);
+            if (heartImage != null) {
+                g.drawImage(heartImage, heartX, heartY, heartSize, heartSize, null);
+            } else {
+                drawHeart(g, heartX, heartY, heartSize);
+            }
+        }
+
         
         // מצייר את פקמן
         g.drawImage(pacman.image, pacman.x, pacman.y, pacman.width, pacman.height, null);
@@ -240,10 +336,10 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             g.drawImage(ghost.image, ghost.x, ghost.y, ghost.width, ghost.height, null);
         }
 
-        // מצייר את כל הקירות
-        // for (Block wall : walls) {
-        //     g.drawImage(wall.image, wall.x, wall.y, wall.width, wall.height, null);
-        // }
+        // מצייר את הקירות הפנימיים
+        for (Block wall : walls) {
+            g.drawImage(wall.image, wall.x, wall.y, wall.width, wall.height, null);
+        }
 
         // מצייר את האוכל (ריבועים לבנים קטנים)
         g.setColor(Color.BLACK);
@@ -251,38 +347,140 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             g.fillRect(food.x, food.y, food.width, food.height);
         }
         
-        // מצייר את הניקוד ומספר החיים
-        g.setFont(new Font("Arial", Font.PLAIN, 18));
+        // הודעת Game Over במרכז המסך
         if (gameOver) {
-            // אם המשחק נגמר - מציג הודעת סיום
-            g.drawString("Game Over: " + String.valueOf(score), tileSize/2, tileSize/2);
+            g.setColor(new Color(0, 0, 0, 180));
+            g.fillRect(0, 0, boardWidth, boardHeight);
+            
+            g.setColor(Color.RED);
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            String gameOverText = "!המשחק נגמר";
+            int textWidth = g.getFontMetrics().stringWidth(gameOverText);
+            g.drawString(gameOverText, (gameAreaWidth - textWidth) / 2, boardHeight / 2 - 40);
+            
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 32));
+            String finalScore = "ניקוד סופי: " + score;
+            textWidth = g.getFontMetrics().stringWidth(finalScore);
+            g.drawString(finalScore, (gameAreaWidth - textWidth) / 2, boardHeight / 2 + 20);
         }
-        else {
-            // אם המשחק פעיל - מציג חיים וניקוד
-            g.drawString("x" + String.valueOf(lives) + " Score: " + String.valueOf(score), tileSize/2, tileSize/2);
+    }
+    
+    // פונקציה שמציירת לב
+    private void drawHeart(Graphics g, int x, int y, int size) {
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        g2d.setColor(Color.RED);
+        int[] xPoints = {x + size/2, x + (int)(size * 0.2), x, x, x + size/2, x + size, x + size, x + (int)(size * 0.8), x + size/2};
+        int[] yPoints = {y + (int)(size * 0.3), y + (int)(size * 0.1), y + (int)(size * 0.1), y + (int)(size * 0.4), y + size, y + (int)(size * 0.4), y + (int)(size * 0.1), y + (int)(size * 0.1), y + (int)(size * 0.3)};
+        g2d.fillPolygon(xPoints, yPoints, 9);
+        
+        g2d.setColor(new Color(139, 0, 0));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawPolygon(xPoints, yPoints, 9);
+    }
+    
+    // מסך פתיחה
+    private void drawStartScreen(Graphics g) {
+        // רקע עם תמונת המשחק
+        if (floorImage != null) {
+            g.drawImage(floorImage, 0, 0, boardWidth, boardHeight, null);
         }
+        
+        // שכבת כהייה
+        g.setColor(new Color(0, 0, 0, 180));
+        g.fillRect(0, 0, boardWidth, boardHeight);
+        
+        // כותרת
+        g.setColor(new Color(255, 215, 0));
+        g.setFont(new Font("Arial", Font.BOLD, 48));
+        String title = "HASIDIC PAC-MAN";
+        int titleWidth = g.getFontMetrics().stringWidth(title);
+        g.drawString(title, (boardWidth - titleWidth) / 2, 150);
+        
+        // הוראות
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 24));
+        String instruction1 = "לחץ SPACE להתחיל משחק";
+        int inst1Width = g.getFontMetrics().stringWidth(instruction1);
+        g.drawString(instruction1, (boardWidth - inst1Width) / 2, 280);
+        
+        g.setFont(new Font("Arial", Font.BOLD, 20));
+        String instruction2 = "לחץ H או CTRL לראות ציונים גבוהים";
+        int inst2Width = g.getFontMetrics().stringWidth(instruction2);
+        g.drawString(instruction2, (boardWidth - inst2Width) / 2, 320);
+    }
+    
+    // לוח תוצאות
+    private void drawHighScores(Graphics g) {
+        // רקע שחור
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, boardWidth, boardHeight);
+        
+        // כותרת
+        g.setColor(new Color(255, 215, 0));
+        g.setFont(new Font("Arial", Font.BOLD, 42));
+        String title = "TOP 10 HIGH SCORES";
+        int titleWidth = g.getFontMetrics().stringWidth(title);
+        g.drawString(title, (boardWidth - titleWidth) / 2, 80);
+        
+        // רשימת שחקנים
+        g.setFont(new Font("Monospaced", Font.BOLD, 20));
+        int startY = 140;
+        int lineHeight = 35;
+        
+        for (int i = 0; i < highScores.length; i++) {
+            // מספר מקום
+            g.setColor(new Color(255, 215, 0));
+            String rank = (i + 1) + ".";
+            g.drawString(rank, 100, startY + i * lineHeight);
+            
+            // שם שחקן
+            g.setColor(Color.WHITE);
+            g.drawString(highScores[i][0], 150, startY + i * lineHeight);
+            
+            // ניקוד
+            g.setColor(new Color(100, 200, 255));
+            String scoreStr = highScores[i][1];
+            int scoreWidth = g.getFontMetrics().stringWidth(scoreStr);
+            g.drawString(scoreStr, boardWidth - 150 - scoreWidth, startY + i * lineHeight);
+        }
+        
+        // הוראה לחזרה
+        g.setColor(Color.YELLOW);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        String backInstruction = "לחץ SPACE לחזור";
+        int backWidth = g.getFontMetrics().stringWidth(backInstruction);
+        g.drawString(backInstruction, (boardWidth - backWidth) / 2, boardHeight - 50);
     }
 
     // פונקציה שמזיזה את כל הדמויות ובודקת התנגשויות
     public void move() {
-        // בודק אם הכיוון המבוקש שונה מהכיוון הנוכחי ואם אפשר לפנות אליו
+        // אם המשחק מושהה - לא מזיזים כלום
+        if (isPaused) {
+            return;
+        }
+        
+        // בודק אם הכיוון המבוקש שונה מהכיוון הנוכחי
         if (nextDirection != pacman.direction) {
-            // שומר את המיקום והכיוון הנוכחיים
-            int oldX = pacman.x;
-            int oldY = pacman.y;
+            // מנסה לפנות לכיוון החדש
             char oldDirection = pacman.direction;
+            pacman.direction = nextDirection;
+            pacman.updateVelocity();
             
-            // מנסה לעדכן לכיוון החדש
-            pacman.updateDirection(nextDirection);
+            // בודק צעד אחד קדימה אם יש קיר
+            int testX = pacman.x + pacman.velocityX;
+            int testY = pacman.y + pacman.velocityY;
+            boolean hitWall = false;
             
-            // בודק אם יש התנגשות עם קיר בכיוון החדש
-            boolean canTurn = true;
             for (Block wall : walls) {
-                if (collision(pacman, wall)) {
-                    // אם יש קיר - לא ניתן לפנות, חוזר למצב הקודם
-                    canTurn = false;
-                    pacman.x = oldX;
-                    pacman.y = oldY;
+                if (testX < wall.x + wall.width && 
+                    testX + pacman.width > wall.x && 
+                    testY < wall.y + wall.height && 
+                    testY + pacman.height > wall.y) {
+                    // יש קיר - חוזר לכיוון הקודם
+                    hitWall = true;
                     pacman.direction = oldDirection;
                     pacman.updateVelocity();
                     break;
@@ -290,7 +488,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             }
             
             // אם הצלחנו לפנות - מעדכן את התמונה
-            if (canTurn) {
+            if (!hitWall) {
                 if (pacman.direction == 'U') {
                     pacman.image = pacmanUpImage;
                 }
@@ -311,23 +509,23 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         pacman.y += pacman.velocityY;
 
         // בדיקת מעבר דרך המנהרות (טלפורטציה בין הצדדים)
-        // רק אם פקמן יוצא מהמסך לגמרי
-        if (pacman.x + pacman.width < 0) {
+        // מיד כשפקמן חוצה את הקיר החיצוני
+        if (pacman.x < offsetX) {
             // אם יצא משמאל - מופיע מימין
-            pacman.x = boardWidth;
+            pacman.x = gameAreaWidth - offsetX - tileSize;
         }
-        else if (pacman.x > boardWidth) {
+        else if (pacman.x > gameAreaWidth - offsetX - tileSize) {
             // אם יצא מימין - מופיע משמאל
-            pacman.x = -pacman.width;
+            pacman.x = offsetX;
         }
         
-        if (pacman.y + pacman.height < 0) {
+        if (pacman.y < offsetY) {
             // אם יצא מלמעלה - מופיע מלמטה
-            pacman.y = boardHeight;
+            pacman.y = boardHeight - offsetY - tileSize;
         }
-        else if (pacman.y > boardHeight) {
+        else if (pacman.y > boardHeight - offsetY - tileSize) {
             // אם יצא מלמטה - מופיע מלמעלה
-            pacman.y = -pacman.height;
+            pacman.y = offsetY;
         }
 
         // בדיקת התנגשות עם קירות
@@ -351,6 +549,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                     return;
                 }
                 resetPositions(); // מאפס את מיקומי הדמויות
+                isPaused = true; // משהה את המשחק אחרי איבוד חיים
+                break; // יוצא מהלולאה אחרי התנגשות
             }
 
             // אם הרוח נמצאת בשורה 9 ולא זז למעלה/למטה - כופה אותה ללכת למעלה
@@ -362,9 +562,23 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             ghost.x += ghost.velocityX;
             ghost.y += ghost.velocityY;
             
-            // בדיקה אם הרוח התנגשה בקיר או בגבול המסך
+            // בדיקת מעבר דרך המנהרות לרוחות (טלפורטציה)
+            if (ghost.x < offsetX) {
+                ghost.x = gameAreaWidth - offsetX - tileSize;
+            }
+            else if (ghost.x > gameAreaWidth - offsetX - tileSize) {
+                ghost.x = offsetX;
+            }
+            if (ghost.y < offsetY) {
+                ghost.y = boardHeight - offsetY - tileSize;
+            }
+            else if (ghost.y > boardHeight - offsetY - tileSize) {
+                ghost.y = offsetY;
+            }
+            
+            // בדיקה אם הרוח התנגשה בקיר
             for (Block wall : walls) {
-                if (collision(ghost, wall) || ghost.x <= 0 || ghost.x + ghost.width >= boardWidth) {
+                if (collision(ghost, wall)) {
                     // אם יש התנגשות - מבטל את התנועה ונותן כיוון אקראי חדש
                     ghost.x -= ghost.velocityX;
                     ghost.y -= ghost.velocityY;
@@ -380,7 +594,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             if (collision(pacman, food)) {
                 // אם פקמן נגע באוכל - שומר אותו למחיקה ומוסיף ניקוד
                 foodEaten = food;
-                score += 10;
+                score += 1; // כל אכילה שווה נקודה אחת
             }
         }
         foods.remove(foodEaten); // מוחק את האוכל שנאכל
@@ -434,18 +648,62 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     // פונקציה שנקראת כשלוחצים על מקש - שומר את הכיוון המבוקש
     @Override
     public void keyPressed(KeyEvent e) {
+        // במסך הפתיחה
+        if (showStartScreen) {
+            if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                // התחלת משחק
+                showStartScreen = false;
+                loadMap();
+                resetPositions();
+                gameLoop.start();
+            }
+            else if (e.getKeyCode() == KeyEvent.VK_H || e.getKeyCode() == KeyEvent.VK_CONTROL) {
+                // הצגת לוח תוצאות
+                showStartScreen = false;
+                showHighScores = true;
+            }
+            repaint();
+            return;
+        }
+        
+        // בלוח התוצאות
+        if (showHighScores) {
+            if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                showHighScores = false;
+                showStartScreen = true;
+            }
+            repaint();
+            return;
+        }
+        
+        // אם המשחק נגמר - איפוס המשחק בלחיצה על כל מקש
+        if (gameOver) {
+            loadMap(); // טוען מפה חדשה
+            resetPositions(); // מאפס מיקומים
+            lives = 3; // מאפס את מספר החיים
+            score = 0; // מאפס את הניקוד
+            gameOver = false; // מבטל את מצב סיום המשחק
+            nextDirection = 'R'; // מאפס את הכיוון המבוקש
+            gameLoop.start(); // מתחיל את הטיימר מחדש
+            return;
+        }
+        
         // שומר את הכיוון שהשחקן רוצה לפנות אליו
         if (e.getKeyCode() == KeyEvent.VK_UP) {
             nextDirection = 'U'; // חץ למעלה
+            if (isPaused) isPaused = false; // מבטל השהיה אם המשחק מושהה
         }
         else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
             nextDirection = 'D'; // חץ למטה
+            if (isPaused) isPaused = false; // מבטל השהיה אם המשחק מושהה
         }
         else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
             nextDirection = 'L'; // חץ שמאלה
+            if (isPaused) isPaused = false; // מבטל השהיה אם המשחק מושהה
         }
         else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
             nextDirection = 'R'; // חץ ימינה
+            if (isPaused) isPaused = false; // מבטל השהיה אם המשחק מושהה
         }
     }
 
@@ -463,4 +721,30 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             gameLoop.start(); // מתחיל את הטיימר מחדש
         }
     }
+    
+    // פונקציות MouseListener
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        // בדיקה אם לחצו על כפתור הסגירה
+        int mouseX = e.getX();
+        int mouseY = e.getY();
+        
+        if (mouseX >= closeButtonX && mouseX <= closeButtonX + closeButtonSize &&
+            mouseY >= closeButtonY && mouseY <= closeButtonY + closeButtonSize) {
+            // יציאה מהמשחק
+            System.exit(0);
+        }
+    }
+    
+    @Override
+    public void mousePressed(MouseEvent e) {}
+    
+    @Override
+    public void mouseReleased(MouseEvent e) {}
+    
+    @Override
+    public void mouseEntered(MouseEvent e) {}
+    
+    @Override
+    public void mouseExited(MouseEvent e) {}
 }

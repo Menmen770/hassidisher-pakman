@@ -4,41 +4,40 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.pacman</groupId>
-    <artifactId>pacman-game</artifactId>
-    <version>1.0.0</version>
+    <groupId>com.hasidicmaze</groupId>
+    <artifactId>hasidic-maze</artifactId>
+    <version>2.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Pac Man Game</name>
-    <description>A Pac Man game implementation in Java</description>
+    <name>Hasidic Maze</name>
+    <description>Hasidic Maze — menu, maps, and high scores in Java Swing</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
     </properties>
 
     <build>
-        <sourceDirectory>.</sourceDirectory>
+        <sourceDirectory>src</sourceDirectory>
         <outputDirectory>bin</outputDirectory>
+        <resources>
+            <resource>
+                <directory>assets</directory>
+                <targetPath>assets</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.1</version>
-                <configuration>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                    <release>21</release>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>App</mainClass>
+                    <mainClass>com.hasidicmaze.App</mainClass>
                 </configuration>
             </plugin>
         </plugins>
