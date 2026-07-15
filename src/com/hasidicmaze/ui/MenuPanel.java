@@ -59,13 +59,6 @@ public class MenuPanel extends AtmospherePanel {
         gc.gridy = 4;
         center.add(quit, gc);
 
-        gc.gridy = 5;
-        gc.insets = new Insets(28, 0, 0, 0);
-        JLabel hint = new JLabel("חיצים לתנועה · ESC לחזרה לתפריט", SwingConstants.CENTER);
-        hint.setFont(Theme.body(14));
-        hint.setForeground(Theme.MUTED);
-        center.add(hint, gc);
-
         add(center, BorderLayout.CENTER);
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER));

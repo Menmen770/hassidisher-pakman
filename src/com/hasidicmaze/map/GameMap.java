@@ -17,7 +17,7 @@ public final class GameMap {
     private final String[] tiles;
 
     public GameMap(String id, String title, String subtitle, String difficulty, String[] tiles) {
-        this(id, title, subtitle, difficulty, "bg.png", false, tiles);
+        this(id, title, subtitle, difficulty, com.hasidicmaze.assets.AssetManager.BG_IYUNA, false, tiles);
     }
 
     public GameMap(

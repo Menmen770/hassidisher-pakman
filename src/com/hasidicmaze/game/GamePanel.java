@@ -36,7 +36,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private Image sessionBackground;
 
     /**
-     * Canvas matches bg.png aspect ratio (scaled to fit screen).
+     * Canvas matches the stage background aspect ratio (scaled to fit screen).
      * Set in startSession from the real image — never invented sizes.
      */
     private int gameAreaWidth = 640;
@@ -72,15 +72,18 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private char nextDirection = 'R';
     private boolean awaitingName;
 
-    private int closeButtonX;
-    private int closeButtonY;
-    private final int closeButtonSize = 14;
-    /** Debug tile grid — toggle with G. Use to align mapOrigin with floor tiles in bg.png. */
-    private boolean showTileGrid = true;
-    /** Preview without blue wall tiles — toggle with H (collision stays). */
-    private boolean showWallTiles = true;
+    private int backButtonX;
+    private int backButtonY;
+    private int backButtonW = 88;
+    private int backButtonH = 32;
+    /** Debug tile grid — toggle with G / H. Hidden by default for play. */
+    private boolean showTileGrid = false;
+    /** Blue wall tiles — toggle with H (collision stays). Hidden by default. */
+    private boolean showWallTiles = false;
     /** Shift background up (px) so the grid sits a bit lower on the floor art. */
     private final int bgShiftUp = 8;
+    /** Status strip beside the board — does not affect map/bg layout. */
+    private static final int SIDE_W = 110;
 
     public GamePanel(Listener listener) {
         this.listener = listener;
@@ -90,13 +93,38 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getX() >= closeButtonX && e.getX() <= closeButtonX + closeButtonSize
-                    && e.getY() >= closeButtonY && e.getY() <= closeButtonY + closeButtonSize) {
+                if (hitBackButton(e.getX(), e.getY())) {
                     stop();
                     listener.onQuitToMenu();
                 }
             }
         });
+    }
+
+    private int canvasWidth() {
+        return gameAreaWidth + SIDE_W;
+    }
+
+    private int canvasHeight() {
+        return boardHeight;
+    }
+
+    private int canvasOffsetX(int panelW, int drawW) {
+        return (panelW - drawW) / 2;
+    }
+
+    private boolean hitBackButton(int panelX, int panelY) {
+        int panelW = Math.max(getWidth(), 1);
+        int panelH = Math.max(getHeight(), 1);
+        double scale = Math.min(panelW / (double) canvasWidth(), panelH / (double) canvasHeight());
+        int drawW = (int) Math.round(canvasWidth() * scale);
+        int drawH = (int) Math.round(canvasHeight() * scale);
+        int ox = canvasOffsetX(panelW, drawW);
+        int oy = (panelH - drawH) / 2;
+        double gx = (panelX - ox) / scale;
+        double gy = (panelY - oy) / scale;
+        return gx >= backButtonX && gx <= backButtonX + backButtonW
+            && gy >= backButtonY && gy <= backButtonY + backButtonH;
     }
 
     public void startSession(GameMap map) {
@@ -120,11 +148,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         int slackY = Math.max(0, boardHeight - rowCount * tileSize);
         mapOriginY = slackY;
 
-        Dimension size = new Dimension(gameAreaWidth, boardHeight);
-        setPreferredSize(size);
-        setMinimumSize(size);
-        setMaximumSize(size);
-        setSize(size);
+        // Logical board size for drawing/collision only — panel fills the fixed window and scales
         setOpaque(true);
 
         score = 0;
@@ -358,10 +382,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         // Scale board to fill the panel (CardLayout may stretch the host)
         int panelW = Math.max(getWidth(), 1);
         int panelH = Math.max(getHeight(), 1);
-        double scale = Math.min(panelW / (double) gameAreaWidth, panelH / (double) boardHeight);
-        int drawW = (int) Math.round(gameAreaWidth * scale);
-        int drawH = (int) Math.round(boardHeight * scale);
-        int ox = (panelW - drawW) / 2;
+        double scale = Math.min(panelW / (double) canvasWidth(), panelH / (double) canvasHeight());
+        int drawW = (int) Math.round(canvasWidth() * scale);
+        int drawH = (int) Math.round(canvasHeight() * scale);
+        int ox = canvasOffsetX(panelW, drawW);
         int oy = (panelH - drawH) / 2;
 
         g2.setColor(Theme.INK);
@@ -377,8 +401,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g2.setColor(Theme.INK_SOFT);
             g2.fillRect(0, 0, gameAreaWidth, boardHeight);
         }
-
-        drawHud(g2);
 
         g2.drawImage(hero.image, hero.x, hero.y, hero.width, hero.height, null);
         for (Entity enemy : enemies) {
@@ -413,6 +435,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         } else if (isPaused && !showTileGrid) {
             drawStartHint(g2);
         }
+
+        // Side bar on the right — board alignment above stays untouched
+        drawSideBar(g2);
         g2.dispose();
     }
 
@@ -433,7 +458,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         g2.setColor(new Color(0, 0, 0, 160));
         g2.setFont(Theme.bodyBold(11));
-        g2.drawString("[ ] רשת | IJKL הזזה | G רשת | H הסתר הכל | tile=" + tileSize
+        g2.drawString("[ ] רשת | IJKL הזזה | G רשת | H הצג/הסתר | tile=" + tileSize
             + " origin=" + mapOriginX + "," + mapOriginY, 8, 16);
         g2.dispose();
     }
@@ -475,41 +500,63 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         centerText(g, "לחץ חץ כדי להתחיל", boardHeight / 2 + 8);
     }
 
-    private void drawHud(Graphics2D g) {
-        closeButtonX = 35;
-        closeButtonY = 3;
-        g.setColor(Theme.ACCENT);
-        g.fillRoundRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize, 4, 4);
-        g.setColor(Color.WHITE);
-        g.setFont(Theme.bodyBold(11));
-        g.drawString("X", closeButtonX + 4, closeButtonY + 11);
-
-        int startX = 75;
+    private void drawSideBar(Graphics2D g) {
+        int x0 = gameAreaWidth;
         g.setColor(Theme.INK);
-        g.setFont(Theme.bodyBold(13));
-        String scoreStr = score + " / " + totalFoodCount;
-        g.drawString(scoreStr, startX, 18);
-        int scoreWidth = g.getFontMetrics().stringWidth(scoreStr);
+        g.fillRect(x0, 0, SIDE_W, boardHeight);
+        g.setColor(new Color(212, 168, 75, 120));
+        g.setStroke(new BasicStroke(1.2f));
+        g.drawLine(x0, 0, x0, boardHeight);
 
-        int heartSize = 16;
-        int heartStartX = startX + scoreWidth + 15;
+        int cx = x0 + SIDE_W / 2;
+
+        // Top: hearts stacked
+        int heartSize = 26;
+        int gap = 10;
+        int heartStartY = 28;
         for (int i = 0; i < lives; i++) {
-            int hx = heartStartX + i * 20;
+            int hx = cx - heartSize / 2;
+            int hy = heartStartY + i * (heartSize + gap);
             if (assets.heart != null) {
-                g.drawImage(assets.heart, hx, 5, heartSize, heartSize, null);
+                g.drawImage(assets.heart, hx, hy, heartSize, heartSize, null);
             } else {
-                drawHeart(g, hx, 5, heartSize);
+                drawHeart(g, hx, hy, heartSize);
             }
         }
 
-        g.setColor(Theme.GOLD);
-        g.setFont(Theme.bodyBold(12));
-        g.drawString(gameMap.getTitle(), gameAreaWidth - 12 - g.getFontMetrics().stringWidth(gameMap.getTitle()), 18);
+        // Middle: score
+        g.setColor(Theme.GOLD_BRIGHT);
+        g.setFont(Theme.mono(26));
+        String scoreStr = String.valueOf(score);
+        int sw = g.getFontMetrics().stringWidth(scoreStr);
+        int scoreY = boardHeight / 2 + 8;
+        g.drawString(scoreStr, cx - sw / 2, scoreY);
+
+        g.setColor(Theme.MUTED);
+        g.setFont(Theme.body(12));
+        String pts = "נקודות";
+        int pw = g.getFontMetrics().stringWidth(pts);
+        g.drawString(pts, cx - pw / 2, scoreY + 20);
+
+        // Bottom: back button
+        backButtonW = 86;
+        backButtonH = 36;
+        backButtonX = x0 + (SIDE_W - backButtonW) / 2;
+        backButtonY = boardHeight - backButtonH - 22;
+        g.setColor(Theme.BUTTON);
+        g.fillRoundRect(backButtonX, backButtonY, backButtonW, backButtonH, 10, 10);
+        g.setColor(Theme.BUTTON_BORDER);
+        g.drawRoundRect(backButtonX, backButtonY, backButtonW - 1, backButtonH - 1, 10, 10);
+        g.setColor(Theme.CREAM);
+        g.setFont(Theme.bodyBold(14));
+        String back = "חזרה";
+        int bw = g.getFontMetrics().stringWidth(back);
+        g.drawString(back, backButtonX + (backButtonW - bw) / 2, backButtonY + 24);
     }
 
     private void drawOverlay(Graphics2D g, String title, String line2, String line3) {
         g.setColor(new Color(0, 0, 0, 180));
-        g.fillRect(0, 0, getWidth(), getHeight());
+        g.fillRect(0, 0, gameAreaWidth, boardHeight);
         g.setColor(Theme.GOLD_BRIGHT);
         g.setFont(Theme.display(40));
         centerText(g, title, boardHeight / 2 - 36);

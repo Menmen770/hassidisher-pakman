@@ -7,7 +7,7 @@ import com.hasidicmaze.assets.AssetManager;
  */
 public class App {
     public static void main(String[] args) {
-        AssetManager.reset(); // always pick up current root bg.png
+        AssetManager.reset(); // always pick up current assets/backgrounds
         MainFrame.launch();
     }
 }

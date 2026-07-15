@@ -1,0 +1,10 @@
+NOT.N.T|481|courtyard|0
+MenMen|411|courtyard|0
+Igor|399|twin-halls|0
+Shmuel|350|crossroads|0
+שמואל|338|iyuna|1784104795515
+חצרוני|333|iyuna|1784105464846
+Oded|294|spiral-gate|0
+Eitan|288|courtyard|0
+Nattai|277|twin-halls|0
+Dvir|255|crossroads|0

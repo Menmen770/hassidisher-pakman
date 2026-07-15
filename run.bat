@@ -1,9 +1,12 @@
 @echo off
+setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 REM Always refresh compiled classes so map edits show up
 if exist bin\com rmdir /s /q bin\com
 if exist bin\src rmdir /s /q bin\src
-javac -encoding UTF-8 -d bin src/com/hasidicmaze/*.java src/com/hasidicmaze/*/*.java
+set JAVA_FILES=
+for /r src %%f in (*.java) do set JAVA_FILES=!JAVA_FILES! "%%f"
+javac -encoding UTF-8 -d bin !JAVA_FILES!
 if errorlevel 1 (
   echo Compile failed.
   pause

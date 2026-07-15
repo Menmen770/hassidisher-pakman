@@ -1,5 +1,6 @@
 package com.hasidicmaze.map;
 
+import com.hasidicmaze.assets.AssetManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +32,7 @@ public final class MapCatalog {
             .orElse(MAPS.get(0));
     }
 
-    /** סדר עיונא — קל — bg2.png (המפה שעבדת עליה) */
+    /** סדר עיונא — קל */
     private static GameMap sederIyuna() {
         String[] digits = {
             "0000000000000000000",
@@ -59,9 +60,9 @@ public final class MapCatalog {
         return fromDigits(
             "iyuna",
             "סדר עיונא",
-            "הרקע והמחסומים של bg2",
+            "מבוך עיונא",
             "קל",
-            "bg2.png",
+            AssetManager.BG_IYUNA,
             false,
             digits,
             null,
@@ -69,7 +70,7 @@ public final class MapCatalog {
         );
     }
 
-    /** סדר גירסא — קשה — bg.png + המפה הראשונה שהתאמנו */
+    /** סדר גירסא — קשה */
     private static GameMap sederGirsa() {
         String[] digits = {
             "0000000000000001000",
@@ -99,7 +100,7 @@ public final class MapCatalog {
             "סדר גירסא",
             "החצר הגדולה — המפה הראשונה",
             "קשה",
-            "bg.png",
+            AssetManager.BG_GIRSA,
             false,
             digits,
             new int[][]{{11, 7}, {11, 8}, {11, 9}, {11, 10}},
@@ -140,7 +141,7 @@ public final class MapCatalog {
             title,
             "בקרוב — השלב עדיין לא פתוח",
             difficulty,
-            "bg2.png",
+            AssetManager.BG_IYUNA,
             true,
             stub
         );

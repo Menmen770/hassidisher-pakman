@@ -1,12 +1,14 @@
 package com.hasidicmaze;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.util.Arrays;
 
 /**
  * Visual identity for Hasidic Maze — ink navy, warm gold, soft parchment.
+ * Window size is fixed so every card opens at the same preferred frame.
  */
 public final class Theme {
     public static final Color INK = new Color(18, 24, 38);
@@ -22,9 +24,14 @@ public final class Theme {
     public static final Color BUTTON_HOVER = new Color(56, 78, 118);
     public static final Color BUTTON_BORDER = new Color(212, 168, 75, 180);
 
-    public static final int WINDOW_WIDTH = 960;
-    public static final int WINDOW_HEIGHT = 640;
+    /** Fixed startup frame — matches the preferred in-game window size. */
+    public static final int WINDOW_WIDTH = 733;
+    public static final int WINDOW_HEIGHT = 713;
     public static final int TILE_SIZE = 42;
+
+    public static Dimension windowSize() {
+        return new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT);
+    }
 
     private static Font displayFont;
     private static Font bodyFont;

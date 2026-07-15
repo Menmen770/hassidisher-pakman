@@ -9,12 +9,19 @@ import java.util.Map;
 import javax.swing.ImageIcon;
 
 /**
- * Loads game images. Map backgrounds are same-size files in the project root (bg.png, bg2.png, …).
+ * Loads game images from {@code assets/} — backgrounds, characters, ui.
  */
 public final class AssetManager {
     private static AssetManager instance;
 
-    /** Default menu / first-stage backdrop. */
+    public static final String BG_IYUNA = "רקע מבוך עיונא.png";
+    public static final String BG_GIRSA = "רקע מבוך גירסא.png";
+
+    private static final String DIR_BACKGROUNDS = "backgrounds";
+    private static final String DIR_CHARACTERS = "characters";
+    private static final String DIR_UI = "ui";
+
+    /** Default menu / fallback backdrop. */
     public final Image background;
     public final Image wall;
     public final Image floor;
@@ -33,23 +40,23 @@ public final class AssetManager {
     private final Map<String, Image> backgroundCache = new HashMap<>();
 
     private AssetManager() {
-        background = loadBackgroundFile("bg.png");
+        background = loadBackgroundFile(BG_IYUNA);
         if (background != null) {
-            backgroundCache.put("bg.png", background);
+            backgroundCache.put(BG_IYUNA, background);
         }
-        wall = load("wall.png");
-        floor = load("floor.png");
-        heart = load("heart.png");
-        heroUp = load("pacmanUp.png");
-        heroDown = load("pacmanDown.png");
-        heroLeft = load("pacmanLeft.png");
-        heroRight = load("pacmanRight.png");
-        blueEnemy = load("blueGhost.png");
-        orangeEnemy = load("orangeGhost.png");
-        pinkEnemy = load("pinkGhost.png");
-        redEnemy = load("redGhost.png");
-        cherry = load("cherry.png");
-        powerFood = load("powerFood.png");
+        wall = loadUi("wall.png");
+        floor = loadUi("floor.png");
+        heart = loadUi("heart.png");
+        heroUp = loadCharacter("pacmanUp.png");
+        heroDown = loadCharacter("pacmanDown.png");
+        heroLeft = loadCharacter("pacmanLeft.png");
+        heroRight = loadCharacter("pacmanRight.png");
+        blueEnemy = loadCharacter("blueGhost.png");
+        orangeEnemy = loadCharacter("orangeGhost.png");
+        pinkEnemy = loadCharacter("pinkGhost.png");
+        redEnemy = loadCharacter("redGhost.png");
+        cherry = loadUi("cherry.png");
+        powerFood = loadUi("powerFood.png");
     }
 
     public static synchronized AssetManager get() {
@@ -59,12 +66,12 @@ public final class AssetManager {
         return instance;
     }
 
-    /** Force-reload singleton (e.g. after replacing bg.png). */
+    /** Force-reload singleton (e.g. after replacing a background file). */
     public static synchronized void reset() {
         instance = null;
     }
 
-    /** Same-size stage backdrop by file name (bg.png, bg2.png, …). */
+    /** Same-size stage backdrop by file name under {@code assets/backgrounds/}. */
     public Image backgroundFor(String fileName) {
         if (fileName == null || fileName.isBlank()) {
             return background;
@@ -73,34 +80,30 @@ public final class AssetManager {
     }
 
     private static Image loadBackgroundFile(String fileName) {
-        Path[] candidates = {
-            Paths.get(fileName),
-            Paths.get(System.getProperty("user.dir"), fileName),
-            Paths.get("assets", fileName)
-        };
-        for (Path path : candidates) {
-            File file = path.toFile();
-            if (file.isFile()) {
-                System.out.println("Background: " + file.getAbsolutePath());
-                return new ImageIcon(file.getAbsolutePath()).getImage();
-            }
-        }
-        System.err.println("Missing background: " + fileName);
-        return null;
+        return loadFrom("assets", DIR_BACKGROUNDS, fileName);
     }
 
-    private static Image load(String fileName) {
+    private static Image loadCharacter(String fileName) {
+        return loadFrom("assets", DIR_CHARACTERS, fileName);
+    }
+
+    private static Image loadUi(String fileName) {
+        return loadFrom("assets", DIR_UI, fileName);
+    }
+
+    private static Image loadFrom(String... parts) {
+        Path path = Paths.get(parts[0], java.util.Arrays.copyOfRange(parts, 1, parts.length));
         Path[] candidates = {
-            Paths.get(fileName),
-            Paths.get("assets", fileName)
+            path,
+            Paths.get(System.getProperty("user.dir")).resolve(path)
         };
-        for (Path path : candidates) {
-            File file = path.toFile();
+        for (Path candidate : candidates) {
+            File file = candidate.toFile();
             if (file.isFile()) {
                 return new ImageIcon(file.getAbsolutePath()).getImage();
             }
         }
-        System.err.println("Missing asset: " + fileName);
+        System.err.println("Missing asset: " + path);
         return null;
     }
 }

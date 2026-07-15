@@ -25,6 +25,10 @@
                 <directory>assets</directory>
                 <targetPath>assets</targetPath>
             </resource>
+            <resource>
+                <directory>data</directory>
+                <targetPath>data</targetPath>
+            </resource>
         </resources>
         <plugins>
             <plugin>
