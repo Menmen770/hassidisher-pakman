@@ -1,12 +1,12 @@
 package com.hasidicmaze.score;
 
+import com.hasidicmaze.AppPaths;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,8 +16,8 @@ import java.util.List;
  */
 public final class HighScoreManager {
     private static final int MAX_ENTRIES = 10;
-    private static final Path FILE = Paths.get("data", "scores.txt");
 
+    private final Path file = AppPaths.resolve("data", "scores.txt");
     private final List<HighScore> scores = new ArrayList<>();
 
     public HighScoreManager() {
@@ -88,10 +88,10 @@ public final class HighScoreManager {
     }
 
     private void load() {
-        if (!Files.isRegularFile(FILE)) {
+        if (!Files.isRegularFile(file)) {
             return;
         }
-        try (BufferedReader reader = Files.newBufferedReader(FILE, StandardCharsets.UTF_8)) {
+        try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
@@ -136,11 +136,11 @@ public final class HighScoreManager {
 
     private void save() {
         try {
-            Path parent = FILE.getParent();
+            Path parent = file.getParent();
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            try (BufferedWriter writer = Files.newBufferedWriter(FILE, StandardCharsets.UTF_8)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
                 for (int i = 0; i < scores.size(); i++) {
                     HighScore score = scores.get(i);
                     writer.write((i + 1) + "|" + score.getName() + "|" + score.getScore());

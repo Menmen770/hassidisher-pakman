@@ -1,9 +1,9 @@
 package com.hasidicmaze.sound;
 
+import com.hasidicmaze.AppPaths;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.Map;
 import javax.sound.sampled.AudioFormat;
@@ -222,17 +222,8 @@ public final class SoundManager {
     }
 
     private static File resolve(String relative) {
-        Path path = Paths.get("assets", "sounds", relative);
-        Path[] candidates = {
-            path,
-            Paths.get(System.getProperty("user.dir")).resolve(path)
-        };
-        for (Path candidate : candidates) {
-            File file = candidate.toFile();
-            if (file.isFile()) {
-                return file;
-            }
-        }
-        return null;
+        Path path = AppPaths.resolve("assets", "sounds").resolve(relative);
+        File file = path.toFile();
+        return file.isFile() ? file : null;
     }
 }

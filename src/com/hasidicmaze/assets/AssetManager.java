@@ -1,9 +1,9 @@
 package com.hasidicmaze.assets;
 
+import com.hasidicmaze.AppPaths;
 import java.awt.Image;
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.ImageIcon;
@@ -132,16 +132,10 @@ public final class AssetManager {
     }
 
     private static Image loadFrom(String... parts) {
-        Path path = Paths.get(parts[0], java.util.Arrays.copyOfRange(parts, 1, parts.length));
-        Path[] candidates = {
-            path,
-            Paths.get(System.getProperty("user.dir")).resolve(path)
-        };
-        for (Path candidate : candidates) {
-            File file = candidate.toFile();
-            if (file.isFile()) {
-                return new ImageIcon(file.getAbsolutePath()).getImage();
-            }
+        Path path = AppPaths.resolve(parts[0], java.util.Arrays.copyOfRange(parts, 1, parts.length));
+        File file = path.toFile();
+        if (file.isFile()) {
+            return new ImageIcon(file.getAbsolutePath()).getImage();
         }
         System.err.println("Missing asset: " + path);
         return null;
