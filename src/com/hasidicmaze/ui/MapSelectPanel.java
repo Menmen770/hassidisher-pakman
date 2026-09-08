@@ -5,6 +5,8 @@ import com.hasidicmaze.Theme;
 import com.hasidicmaze.assets.AssetManager;
 import com.hasidicmaze.map.GameMap;
 import com.hasidicmaze.map.MapCatalog;
+import com.hasidicmaze.sound.SoundId;
+import com.hasidicmaze.sound.SoundManager;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -31,9 +33,9 @@ import javax.swing.border.EmptyBorder;
 /** Stage select — RTL vertical list, gold/navy language. */
 public class MapSelectPanel extends AtmospherePanel {
     private static final int ROW_W = 480;
-    private static final int ROW_H = 76;
+    private static final int ROW_H = 84;
     private static final int GAP = 14;
-    private static final int PRIZE = 44;
+    private static final int PRIZE = 58;
 
     private final Consumer<GameMap> onPlay;
     private GameMap selected = MapCatalog.all().get(0);
@@ -191,6 +193,7 @@ public class MapSelectPanel extends AtmospherePanel {
                 public void mouseEntered(java.awt.event.MouseEvent e) {
                     if (!map.isLocked()) {
                         hovered = true;
+                        SoundManager.get().play(SoundId.MENU_SELECT);
                         repaint();
                     }
                 }
@@ -206,6 +209,7 @@ public class MapSelectPanel extends AtmospherePanel {
                     if (map.isLocked()) {
                         return;
                     }
+                    SoundManager.get().play(SoundId.MENU_CONFIRM);
                     select(map);
                     if (e.getClickCount() == 2) {
                         onPlay.accept(map);
@@ -271,13 +275,11 @@ public class MapSelectPanel extends AtmospherePanel {
             g2.setColor(map.isLocked() ? Theme.MUTED_DARK : (on ? Theme.BG_BARK : Theme.CREAM));
             g2.drawString(name, titleX, (h + fm.getAscent() - fm.getDescent()) / 2);
 
-            // Prize icon on the LEFT
+            // Prize icon on the LEFT — no plate; transparent PNG as-is
             Image prize = AssetManager.get().bonusForStage(index);
             if (prize != null) {
-                int ix = 18;
+                int ix = 14;
                 int iy = (h - PRIZE) / 2;
-                g2.setColor(Theme.withAlpha(on ? Theme.BG_BARK : Theme.BG_NAVY, on ? 40 : 150));
-                g2.fillRoundRect(ix - 5, iy - 5, PRIZE + 10, PRIZE + 10, 14, 14);
                 g2.drawImage(prize, ix, iy, PRIZE, PRIZE, null);
             }
 

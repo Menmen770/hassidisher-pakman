@@ -2,6 +2,7 @@ package com.hasidicmaze.game;
 
 import com.hasidicmaze.Theme;
 import com.hasidicmaze.assets.AssetManager;
+import com.hasidicmaze.sound.SoundManager;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.FontMetrics;
@@ -12,13 +13,17 @@ import java.awt.LinearGradientPaint;
 import java.awt.RenderingHints;
 
 /**
- * HUD, overlays, and board sprites. Mutates back-button bounds for hit-testing.
+ * HUD, overlays, and board sprites. Mutates back/mute button bounds for hit-testing.
  */
 public final class GameHud {
     public int backButtonX;
     public int backButtonY;
     public int backButtonW = 88;
     public int backButtonH = 32;
+    public int muteButtonX;
+    public int muteButtonY;
+    public int muteButtonW = 88;
+    public int muteButtonH = 28;
 
     private final AssetManager assets;
     private final int bgShiftUp = 0;
@@ -67,7 +72,9 @@ public final class GameHud {
             }
         }
         for (Entity food : maze.getFoods()) {
-            if (food.powerPellet && food.image != null) {
+            if (food.extraLife && food.image != null) {
+                g2.drawImage(food.image, food.x, food.y, food.width, food.height, null);
+            } else if (food.powerPellet && food.image != null) {
                 g2.drawImage(food.image, food.x, food.y, food.width, food.height, null);
             } else {
                 // Logo cut-blue pellets
@@ -87,23 +94,65 @@ public final class GameHud {
 
         drawFloatingScores(g2, session);
 
+        if (session.isLevelClearFlashing()) {
+            drawLevelClearFlash(g2, maze, session.levelClearFlashPulse());
+        }
+
         if (showTileGrid) {
             drawTileGrid(g2, maze);
         }
 
         if (session.isGameOver()) {
             drawOverlay(g2, maze, "!המשחק נגמר", "ניקוד סופי: " + session.getScore(), "ENTER — שמירה וחזרה לתפריט");
-        } else if (session.isPaused() && session.getLives() < 3) {
+        } else if (session.isUserPaused()) {
+            drawPauseOverlay(g2, maze);
+        } else if (session.isPaused() && session.getLives() < 3 && !session.isLevelClearFlashing()) {
             if (session.isTimedOut()) {
                 drawOverlay(g2, maze, "הזמן נגמר!", "נותרו " + session.getLives() + " חיים", "הזז עם החיצים להמשך");
             } else {
                 drawOverlay(g2, maze, "זהירות!", "נותרו " + session.getLives() + " חיים", "הזז עם החיצים להמשך");
             }
-        } else if (session.isPaused() && !showTileGrid) {
+        } else if (session.isPaused() && !showTileGrid && !session.isLevelClearFlashing()) {
             drawStartHint(g2, maze);
         }
 
         drawSideBar(g2, session);
+    }
+
+    private void drawLevelClearFlash(Graphics2D g, Maze maze, float pulse) {
+        int gameAreaWidth = maze.getGameAreaWidth();
+        int boardHeight = maze.getBoardHeight();
+        int alpha = Math.max(0, Math.min(255, (int) (pulse * 255)));
+        g.setColor(new Color(Theme.BG_GOLD.getRed(), Theme.BG_GOLD.getGreen(), Theme.BG_GOLD.getBlue(), alpha));
+        g.fillRect(0, 0, gameAreaWidth, boardHeight);
+        g.setColor(Theme.CREAM);
+        g.setFont(Theme.display(36));
+        centerText(g, maze, "!כל הכבוד", boardHeight / 2 - 8);
+        g.setFont(Theme.bodyBold(16));
+        g.setColor(Theme.BG_TAN);
+        centerText(g, maze, "השלב הושלם", boardHeight / 2 + 28);
+    }
+
+    private void drawPauseOverlay(Graphics2D g, Maze maze) {
+        int gameAreaWidth = maze.getGameAreaWidth();
+        int boardHeight = maze.getBoardHeight();
+        g.setColor(Theme.withAlpha(Theme.INK, 160));
+        g.fillRect(0, 0, gameAreaWidth, boardHeight);
+        int boxW = 300;
+        int boxH = 88;
+        int bx = gameAreaWidth / 2 - boxW / 2;
+        int by = boardHeight / 2 - boxH / 2;
+        g.setColor(Theme.withAlpha(Theme.TITLE_BAR, 245));
+        g.fillRoundRect(bx, by, boxW, boxH, 28, 28);
+        g.setColor(Theme.BG_GOLD);
+        g.setStroke(new BasicStroke(2.2f));
+        g.drawRoundRect(bx, by, boxW - 1, boxH - 1, 28, 28);
+        g.setColor(Theme.BG_GOLD);
+        g.setFont(Theme.display(30));
+        centerText(g, maze, "השהיה", boardHeight / 2 - 4);
+        g.setColor(Theme.CREAM_SOFT);
+        g.setFont(Theme.body(14));
+        centerText(g, maze, "P — המשך   ·   M — השתקה", boardHeight / 2 + 26);
     }
 
     private void drawTileGrid(Graphics2D g, Maze maze) {
@@ -169,7 +218,7 @@ public final class GameHud {
         final int pad = 16;
         final int heart = 28;
         final int heartGap = 10;
-        final int maxLives = 3;
+        final int maxLives = 5;
 
         g.setColor(Theme.BG_GOLD);
         g.fillRect(x0, 0, rail, boardHeight);
@@ -192,14 +241,20 @@ public final class GameHud {
         }
         int livesBottom = livesTop + maxLives * heart + (maxLives - 1) * heartGap;
 
-        // Bottom chrome (button + timer)
+        // Bottom chrome (mute + back + timer)
         backButtonW = Math.min(90, innerW - 12);
         backButtonH = 34;
         backButtonX = cx - backButtonW / 2;
         backButtonY = boardHeight - pad - backButtonH;
 
-        int timerBaseline = backButtonY - 14;
+        muteButtonW = backButtonW;
+        muteButtonH = 28;
+        muteButtonX = backButtonX;
+        muteButtonY = backButtonY - muteButtonH - 8;
+
+        int timerBaseline = muteButtonY - 12;
         drawMazeTimer(g, session, cx, timerBaseline);
+        drawMuteButton(g);
         drawBackButton(g);
 
         // Score block — vertically centered between lives and timer
@@ -223,6 +278,25 @@ public final class GameHud {
         g.drawString(pts, cx - pw / 2, scoreY + ptsFm.getHeight());
 
         drawEatenBooks(g, session, x0, scoreY + ptsFm.getHeight() + 14);
+    }
+
+    private void drawMuteButton(Graphics2D g) {
+        boolean muted = SoundManager.get().isMuted();
+        int arc = muteButtonH;
+        g.setColor(Theme.withAlpha(Theme.TITLE_BAR, 160));
+        g.fillRoundRect(muteButtonX + 1, muteButtonY + 2, muteButtonW, muteButtonH, arc, arc);
+        g.setColor(Theme.withAlpha(muted ? Theme.BG_RUST : Theme.BG_NAVY, 230));
+        g.fillRoundRect(muteButtonX, muteButtonY, muteButtonW, muteButtonH, arc, arc);
+        g.setColor(muted ? Theme.BG_ORANGE : Theme.BG_TAN);
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawRoundRect(muteButtonX, muteButtonY, muteButtonW - 1, muteButtonH - 1, arc, arc);
+        g.setColor(Theme.CREAM);
+        g.setFont(Theme.bodyBold(12));
+        FontMetrics fm = g.getFontMetrics();
+        String label = muted ? "השתק" : "קול";
+        int tx = muteButtonX + (muteButtonW - fm.stringWidth(label)) / 2;
+        int ty = muteButtonY + (muteButtonH + fm.getAscent() - fm.getDescent()) / 2;
+        g.drawString(label, tx, ty);
     }
 
     private void drawBackButton(Graphics2D g) {

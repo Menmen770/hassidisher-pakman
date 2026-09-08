@@ -38,7 +38,7 @@ echo Running jpackage...
 jpackage ^
   --type app-image ^
   --name "Hassidisher Pakman" ^
-  --app-version 1.0.0 ^
+  --app-version 2.0.0 ^
   --input dist\input ^
   --main-jar hassidisher-pakman.jar ^
   --main-class com.hasidicmaze.App ^
@@ -56,9 +56,10 @@ REM Assets + scores next to the .exe
 xcopy /e /i /y assets "dist\stage\Hassidisher Pakman\assets\" >nul
 if not exist "dist\stage\Hassidisher Pakman\data" mkdir "dist\stage\Hassidisher Pakman\data"
 copy /y data\scores.txt "dist\stage\Hassidisher Pakman\data\scores.txt" >nul
+if exist "docs\קרא-לפני-הפעלה.txt" copy /y "docs\קרא-לפני-הפעלה.txt" "dist\stage\Hassidisher Pakman\קרא-לפני-הפעלה.txt" >nul
 
-REM Zip for download
-powershell -NoProfile -Command "Compress-Archive -Path 'dist\stage\Hassidisher Pakman\*' -DestinationPath 'dist\Hassidisher-Pakman-Windows.zip' -Force"
+REM Zip the whole folder (not loose files) so Extract All creates one clear directory
+powershell -NoProfile -Command "Compress-Archive -Path 'dist\stage\Hassidisher Pakman' -DestinationPath 'dist\Hassidisher-Pakman-Windows.zip' -Force"
 
 echo.
 echo DONE.

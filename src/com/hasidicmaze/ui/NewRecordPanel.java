@@ -24,7 +24,6 @@ import javax.swing.OverlayLayout;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.border.AbstractBorder;
 import javax.swing.border.EmptyBorder;
 
 /** New high-score name entry — warm oak card. */
@@ -32,7 +31,7 @@ public class NewRecordPanel extends AtmospherePanel {
     private final JLabel headline = new JLabel("שיא חדש!", SwingConstants.CENTER);
     private final JLabel rankLine = new JLabel("", SwingConstants.CENTER);
     private final JLabel scoreLine = new JLabel("", SwingConstants.CENTER);
-    private final JTextField nameField = new JTextField();
+    private final JTextField nameField = new RoundedNameField();
     private final SparkleOverlay sparkles = new SparkleOverlay();
 
     private int pendingScore;
@@ -61,6 +60,7 @@ public class NewRecordPanel extends AtmospherePanel {
 
         stack.add(content);
         stack.add(sparkles);
+        // content in front for typing; sparkles only decorate behind/around
         stack.setComponentZOrder(content, 0);
         stack.setComponentZOrder(sparkles, 1);
         add(stack, BorderLayout.CENTER);
@@ -140,31 +140,16 @@ public class NewRecordPanel extends AtmospherePanel {
     }
 
     private void styleNameField() {
-        nameField.setFont(Theme.bodyBold(20));
-        nameField.setForeground(Theme.CREAM);
-        nameField.setCaretColor(Theme.BG_GOLD);
-        nameField.setBackground(Theme.BG_NAVY);
+        nameField.setFont(Theme.bodyBold(22));
+        nameField.setForeground(Theme.BG_BARK);
+        nameField.setSelectedTextColor(Theme.CREAM);
+        nameField.setSelectionColor(Theme.BG_ORANGE);
+        nameField.setCaretColor(Theme.BG_RUST);
+        nameField.setBackground(Theme.CREAM);
+        nameField.setOpaque(false);
         nameField.setHorizontalAlignment(SwingConstants.CENTER);
         nameField.setPreferredSize(new Dimension(280, 50));
-        nameField.setBorder(new AbstractBorder() {
-            @Override
-            public void paintBorder(java.awt.Component c, Graphics g, int x, int y, int w, int h) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                int arc = h;
-                g2.setColor(Theme.BG_NAVY);
-                g2.fillRoundRect(x, y, w - 1, h - 1, arc, arc);
-                g2.setColor(Theme.BG_GOLD);
-                g2.setStroke(new BasicStroke(2f));
-                g2.drawRoundRect(x + 1, y + 1, w - 3, h - 3, arc, arc);
-                g2.dispose();
-            }
-
-            @Override
-            public Insets getBorderInsets(java.awt.Component c) {
-                return new Insets(10, 18, 10, 18);
-            }
-        });
+        nameField.setBorder(new EmptyBorder(10, 22, 10, 22));
         nameField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -173,6 +158,35 @@ public class NewRecordPanel extends AtmospherePanel {
                 }
             }
         });
+    }
+
+    /** Cream pill field — fill + gold stroke share the same round rect. */
+    private static final class RoundedNameField extends JTextField {
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
+            int arc = h;
+            g2.setColor(getBackground());
+            g2.fillRoundRect(0, 0, w - 1, h - 1, arc, arc);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+
+        @Override
+        protected void paintBorder(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
+            int arc = h;
+            g2.setColor(Theme.BG_GOLD);
+            g2.setStroke(new BasicStroke(2.4f));
+            g2.drawRoundRect(1, 1, w - 3, h - 3, arc, arc);
+            g2.dispose();
+        }
     }
 
     public void prepare(int score, int rank) {
@@ -246,9 +260,15 @@ public class NewRecordPanel extends AtmospherePanel {
 
         SparkleOverlay() {
             setOpaque(false);
+            setFocusable(false);
             for (int i = 0; i < x.length; i++) {
                 reset(i, true);
             }
+        }
+
+        @Override
+        public boolean contains(int px, int py) {
+            return false; // let clicks reach the name field underneath
         }
 
         void start() {

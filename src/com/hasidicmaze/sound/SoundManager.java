@@ -42,12 +42,20 @@ public final class SoundManager {
         load(SoundId.MENU_SELECT, "menu-select1.wav", false);
         load(SoundId.MENU_CONFIRM, "menu-select2.wav", false);
 
-        setVolume(SoundId.MUNCH, 0.50f);
-        setVolume(SoundId.GAME_START, 0.50f);
-        setVolume(SoundId.DEATH, 0.50f);
-        setVolume(SoundId.GAME_OVER, 0.50f);
-        setVolume(SoundId.POWER, 0.45f);
-        setVolume(SoundId.GHOST_RETURNS, 0.45f);
+        setVolume(SoundId.MUNCH, 0.32f);
+        setVolume(SoundId.GAME_START, 0.32f);
+        setVolume(SoundId.DEATH, 0.32f);
+        setVolume(SoundId.GAME_OVER, 0.32f);
+        setVolume(SoundId.POWER, 0.28f);
+        setVolume(SoundId.GHOST_RETURNS, 0.28f);
+        setVolume(SoundId.GHOST_EATEN, 0.32f);
+        setVolume(SoundId.BONUS_EATEN, 0.32f);
+        setVolume(SoundId.EXTRA_LIFE, 0.35f);
+        setVolume(SoundId.LEVEL_COMPLETE, 0.32f);
+        setVolume(SoundId.LEVEL_SWEEP, 0.30f);
+        setVolume(SoundId.CREDIT, 0.30f);
+        setVolume(SoundId.MENU_SELECT, 0.28f);
+        setVolume(SoundId.MENU_CONFIRM, 0.28f);
     }
 
     public static synchronized SoundManager get() {
@@ -66,6 +74,15 @@ public final class SoundManager {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean toggleMute() {
+        setEnabled(!enabled);
+        return enabled;
+    }
+
+    public boolean isMuted() {
+        return !enabled;
     }
 
     public void play(SoundId id) {

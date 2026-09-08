@@ -19,13 +19,18 @@ public final class GameSession {
     public static final int BONUS_EATEN_DISPLAY_TICKS = 2 * 20;
     public static final int MAX_EATEN_BOOK_ICONS = 8;
     public static final int SIDE_W = 110;
+    private static final int LEVEL_CLEAR_FLASH_TICKS = 48; // ~2.4s at 50ms
 
     /** One stage prize spawn (book / tefillin / hat). */
     private static final int BONUS_THRESHOLD = 70;
     /** Slower than Pac-Man so chase is escapable. */
     private static final float GHOST_SPEED_START = 0.72f;
     private static final float GHOST_SPEED_PER_MAP = 0.04f;
+    private static final float GHOST_SPEED_PER_SCORE_STEP = 0.015f;
     private static final float GHOST_SPEED_MAX = 0.95f;
+    /** Every N points ghosts get a tiny bit faster / smarter. */
+    private static final int DIFFICULTY_SCORE_STEP = 40;
+    private static final int MAX_LIVES = 5;
     private static final int SCATTER_TICKS = 7 * 20;
     private static final int CHASE_TICKS = 18 * 20;
 
@@ -46,6 +51,8 @@ public final class GameSession {
     private boolean awaitingName;
     private boolean campaignMode;
     private boolean stageAdvancePending;
+    private boolean userPaused;
+    private int levelClearFlashTicks;
 
     private int mazeTimeLimitTicks;
     private int mazeTimeLeftTicks;
@@ -59,6 +66,7 @@ public final class GameSession {
     private int frightenedTicksLeft;
     private int ghostEatStreak;
     private int pathRecalcTiles = 26;
+    private int difficultyTier;
 
     private Entity bonus;
     private int bonusPoints;
@@ -81,6 +89,8 @@ public final class GameSession {
         this.gameMap = map;
         this.campaignMode = campaign;
         this.stageAdvancePending = false;
+        this.userPaused = false;
+        this.levelClearFlashTicks = 0;
         maze.bind(map);
         maze.applyDefaultGridLayout();
         maze.load(map);
@@ -95,12 +105,14 @@ public final class GameSession {
         mapsCleared = 0;
         eatenBooks.clear();
         resetBonusProgress();
+        placeExtraLifeHeartIfNeeded();
         totalFoodCount = maze.getFoods().size();
         mazeTimeLimitTicks = mazeTimeLimitForMap();
         resetPositions();
         resetMazeTimer();
         resetGhostSpeed();
         pathRecalcTiles = 26;
+        difficultyTier = 0;
         scattering = true;
         modeTicksLeft = SCATTER_TICKS;
         stopEnemyMotion();
@@ -112,11 +124,11 @@ public final class GameSession {
     public void continueCampaign(GameMap next) {
         this.gameMap = next;
         this.stageAdvancePending = false;
+        this.userPaused = false;
+        this.levelClearFlashTicks = 0;
         maze.bind(next);
         maze.applyDefaultGridLayout();
         maze.load(next);
-        totalFoodCount = maze.getFoods().size();
-        mazeTimeLimitTicks = mazeTimeLimitForMap();
         resetBonusProgress();
         clearFrightenedMode();
         resetPositions();
@@ -128,6 +140,9 @@ public final class GameSession {
         nextDirection = 'R';
         isPaused = true;
         timedOut = false;
+        placeExtraLifeHeartIfNeeded();
+        totalFoodCount = maze.getFoods().size();
+        mazeTimeLimitTicks = mazeTimeLimitForMap();
         sounds.stopAll();
         sounds.play(SoundId.LEVEL_SWEEP);
     }
@@ -146,6 +161,7 @@ public final class GameSession {
 
     public void reloadAfterLayoutNudge() {
         maze.load(gameMap);
+        placeExtraLifeHeartIfNeeded();
         totalFoodCount = maze.getFoods().size();
         mazeTimeLimitTicks = mazeTimeLimitForMap();
         resetBonusProgress();
@@ -157,9 +173,64 @@ public final class GameSession {
 
     private void loadMapKeepProgress() {
         maze.load(gameMap);
+        placeExtraLifeHeartIfNeeded();
         totalFoodCount = maze.getFoods().size();
         mazeTimeLimitTicks = mazeTimeLimitForMap();
         resetBonusProgress();
+    }
+
+    /** Stages 2–3 (עיונא / גירסא): one heart pickup for +1 life. */
+    private void placeExtraLifeHeartIfNeeded() {
+        int stage = stageIndex();
+        if (stage != 1 && stage != 2) {
+            return;
+        }
+        if (assets.heart == null) {
+            return;
+        }
+        int[] cell = heartSpawnCell();
+        int size = Math.max(18, maze.getTileSize() - 4);
+        int x = maze.getMapOriginX() + cell[1] * maze.getTileSize() + (maze.getTileSize() - size) / 2;
+        int y = maze.getMapOriginY() + cell[0] * maze.getTileSize() + (maze.getTileSize() - size) / 2;
+        maze.getFoods().removeIf(f ->
+            !f.powerPellet && !f.extraLife
+                && Math.abs((f.x + f.width / 2) - (x + size / 2)) < maze.getTileSize() / 2
+                && Math.abs((f.y + f.height / 2) - (y + size / 2)) < maze.getTileSize() / 2);
+        Entity heart = new Entity(assets.heart, x, y, size, size);
+        heart.extraLife = true;
+        maze.getFoods().add(heart);
+    }
+
+    private int[] heartSpawnCell() {
+        int rowCount = maze.getRowCount();
+        int columnCount = maze.getColumnCount();
+        // Prefer open mid-board cell (away from corner power pellets / spawn).
+        int preferR = Math.max(2, Math.min(rowCount - 3, rowCount / 2 - 1));
+        int preferC = Math.max(2, Math.min(columnCount - 3, columnCount / 2 + (stageIndex() == 1 ? -2 : 2)));
+        if (!maze.isWallTile(preferR, preferC)) {
+            return new int[]{preferR, preferC};
+        }
+        return bonusSpawnCell();
+    }
+
+    private void addScore(int points) {
+        if (points <= 0) {
+            return;
+        }
+        score += points;
+        applyDifficultyFromScore();
+    }
+
+    /** Tiny difficulty bumps as score climbs — slow ghost speed + smarter pathing. */
+    private void applyDifficultyFromScore() {
+        int tier = score / DIFFICULTY_SCORE_STEP;
+        while (difficultyTier < tier) {
+            difficultyTier++;
+            ghostSpeedRatio = Math.min(GHOST_SPEED_MAX, ghostSpeedRatio + GHOST_SPEED_PER_SCORE_STEP);
+            if (difficultyTier % 3 == 0 && pathRecalcTiles > 10) {
+                pathRecalcTiles -= 2;
+            }
+        }
     }
 
     private void stopEnemyMotion() {
@@ -171,6 +242,14 @@ public final class GameSession {
 
     public void tick() {
         sounds.tickCooldown();
+        if (levelClearFlashTicks > 0) {
+            levelClearFlashTicks--;
+            sounds.updateAmbient(false, false, false);
+            if (levelClearFlashTicks == 0) {
+                finishLevelClearFlash();
+            }
+            return;
+        }
         if (!isPaused && !gameOver) {
             if (huntWarmupTicksLeft > 0) {
                 huntWarmupTicksLeft--;
@@ -223,6 +302,9 @@ public final class GameSession {
 
     public void setNextDirection(char direction) {
         nextDirection = direction;
+        if (userPaused || levelClearFlashTicks > 0 || stageAdvancePending) {
+            return;
+        }
         if (isPaused) {
             isPaused = false;
             timedOut = false;
@@ -237,6 +319,38 @@ public final class GameSession {
             }
             sounds.play(SoundId.GAME_START);
         }
+    }
+
+    /** Toggle player pause (P). Ignored on start/death wait, game over, or clear flash. */
+    public void toggleUserPause() {
+        if (gameOver || levelClearFlashTicks > 0 || stageAdvancePending) {
+            return;
+        }
+        if (!userPaused && isPaused) {
+            return; // waiting for first move / after death
+        }
+        userPaused = !userPaused;
+        isPaused = userPaused;
+        if (userPaused) {
+            sounds.updateAmbient(false, false, false);
+        }
+    }
+
+    public boolean isUserPaused() {
+        return userPaused;
+    }
+
+    public boolean isLevelClearFlashing() {
+        return levelClearFlashTicks > 0;
+    }
+
+    /** 0..1 pulse for white/gold maze flash. */
+    public float levelClearFlashPulse() {
+        if (levelClearFlashTicks <= 0) {
+            return 0f;
+        }
+        int phase = levelClearFlashTicks / 4;
+        return (phase % 2 == 0) ? 0.72f : 0.18f;
     }
 
     public void markAwaitingName() {
@@ -331,41 +445,60 @@ public final class GameSession {
         for (Entity food : maze.getFoods()) {
             if (maze.collision(hero, food)) {
                 eaten = food;
-                if (food.powerPellet) {
-                    score += 10;
+                if (food.extraLife) {
+                    if (lives < MAX_LIVES) {
+                        lives++;
+                    }
+                    sounds.play(SoundId.EXTRA_LIFE);
+                } else if (food.powerPellet) {
+                    addScore(10);
                     activateFrightenedMode();
                 } else {
-                    score += 1;
+                    addScore(1);
                     sounds.playMunch();
                 }
             }
         }
         if (eaten != null) {
             maze.getFoods().remove(eaten);
-            foodsEatenThisMap++;
-            maybeSpawnBonus();
+            if (!eaten.extraLife) {
+                foodsEatenThisMap++;
+                maybeSpawnBonus();
+            }
         }
         tryEatBonus();
-        if (maze.getFoods().isEmpty() && !stageAdvancePending) {
+        if (maze.getFoods().isEmpty() && !stageAdvancePending && levelClearFlashTicks <= 0) {
             bumpGhostSpeedAfterMapClear();
             bumpPathRecalcAfterMapClear();
             clearFrightenedMode();
             mapsCleared++;
             sounds.stopAll();
             sounds.play(SoundId.LEVEL_COMPLETE);
-            if (campaignMode) {
-                stageAdvancePending = true;
-                isPaused = true;
-                stopEnemyMotion();
-                return;
-            }
-            loadMapKeepProgress();
-            resetPositions();
-            huntWarmupTicksLeft = HUNT_WARMUP_TICKS;
-            scattering = true;
-            modeTicksLeft = SCATTER_TICKS;
-            resetMazeTimer();
+            beginLevelClearFlash();
         }
+    }
+
+    private void beginLevelClearFlash() {
+        levelClearFlashTicks = LEVEL_CLEAR_FLASH_TICKS;
+        userPaused = false;
+        isPaused = true;
+        stopEnemyMotion();
+    }
+
+    private void finishLevelClearFlash() {
+        if (campaignMode) {
+            stageAdvancePending = true;
+            isPaused = true;
+            stopEnemyMotion();
+            return;
+        }
+        loadMapKeepProgress();
+        resetPositions();
+        huntWarmupTicksLeft = HUNT_WARMUP_TICKS;
+        scattering = true;
+        modeTicksLeft = SCATTER_TICKS;
+        resetMazeTimer();
+        isPaused = true;
     }
 
     private void maybeSpawnBonus() {
@@ -442,7 +575,7 @@ public final class GameSession {
         if (!maze.collision(hero, bonus)) {
             return;
         }
-        score += bonusPoints;
+        addScore(bonusPoints);
         sounds.play(SoundId.BONUS_EATEN);
         floatingScores.add(new FloatingScore(
             bonus.x + bonus.width / 2,
@@ -544,7 +677,7 @@ public final class GameSession {
         if (enemy.frightened) {
             int points = Math.min(80, 20 * (ghostEatStreak + 1));
             ghostEatStreak++;
-            score += points;
+            addScore(points);
             sounds.play(SoundId.GHOST_EATEN);
             floatingScores.add(new FloatingScore(
                 enemy.x + enemy.width / 2,
@@ -734,6 +867,7 @@ public final class GameSession {
     private void loseLife(boolean fromTimeout) {
         lives -= 1;
         timedOut = fromTimeout;
+        userPaused = false;
         clearFrightenedMode();
         clearBonus();
         sounds.stopAll();

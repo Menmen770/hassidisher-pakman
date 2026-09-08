@@ -43,6 +43,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (hitMuteButton(e.getX(), e.getY())) {
+                    com.hasidicmaze.sound.SoundManager.get().toggleMute();
+                    requestFocusInWindow();
+                    repaint();
+                    return;
+                }
                 if (hitBackButton(e.getX(), e.getY())) {
                     stop();
                     listener.onQuitToMenu();
@@ -64,6 +70,18 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
 
     private boolean hitBackButton(int panelX, int panelY) {
+        double[] g = toGameCoords(panelX, panelY);
+        return g[0] >= hud.backButtonX && g[0] <= hud.backButtonX + hud.backButtonW
+            && g[1] >= hud.backButtonY && g[1] <= hud.backButtonY + hud.backButtonH;
+    }
+
+    private boolean hitMuteButton(int panelX, int panelY) {
+        double[] g = toGameCoords(panelX, panelY);
+        return g[0] >= hud.muteButtonX && g[0] <= hud.muteButtonX + hud.muteButtonW
+            && g[1] >= hud.muteButtonY && g[1] <= hud.muteButtonY + hud.muteButtonH;
+    }
+
+    private double[] toGameCoords(int panelX, int panelY) {
         int panelW = Math.max(getWidth(), 1);
         int panelH = Math.max(getHeight(), 1);
         double scale = Math.min(panelW / (double) canvasWidth(), panelH / (double) canvasHeight());
@@ -71,10 +89,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         int drawH = (int) Math.round(canvasHeight() * scale);
         int ox = canvasOffsetX(panelW, drawW);
         int oy = (panelH - drawH) / 2;
-        double gx = (panelX - ox) / scale;
-        double gy = (panelY - oy) / scale;
-        return gx >= hud.backButtonX && gx <= hud.backButtonX + hud.backButtonW
-            && gy >= hud.backButtonY && gy <= hud.backButtonY + hud.backButtonH;
+        return new double[]{(panelX - ox) / scale, (panelY - oy) / scale};
     }
 
     public void startSession(GameMap map, boolean campaign) {
@@ -192,6 +207,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
             stop();
             listener.onQuitToMenu();
+            return;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_M) {
+            com.hasidicmaze.sound.SoundManager.get().toggleMute();
+            repaint();
+            return;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_P) {
+            session.toggleUserPause();
+            repaint();
             return;
         }
         if (e.getKeyCode() == KeyEvent.VK_G) {

@@ -1,0 +1,25 @@
+Hassidisher Pakman — הוראות הפעלה
+================================
+
+Windows חסם / פתח את הקובץ מתוך ה-ZIP בלי לחלץ?
+זה בדיוק מה שגורם לשגיאה על Hassidisher Pakman.cfg
+
+עשו כך:
+
+1) שמרו את הקובץ Hassidisher-Pakman-Windows.zip לתיקייה
+   (שולחן העבודה / הורדות).
+
+2) אם Windows שואל "האם אתה בטוח?" — לחצו "שמור בכל זאת"
+   או "Unblock / בטל חסימה" (מאפיינים של הקובץ → סמן Unblock).
+
+3) לחצו לחיצה ימנית על ה-ZIP → Extract All / חלץ הכל
+   אל תפתחו את המשחק מתוך חלון ה-ZIP!
+
+4) היכנסו לתיקייה שחולצה:
+   Hassidisher Pakman\
+     Hassidisher Pakman.exe   ← לחצו כאן
+
+5) אם Windows Defender SmartScreen מופיע:
+   More info / מידע נוסף → Run anyway / הפעל בכל זאת
+
+לא צריך להתקין Java.

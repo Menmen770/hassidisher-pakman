@@ -24,6 +24,8 @@ public class Entity {
     public boolean orangeFleeing;
     /** Large corner pellet — triggers frightened ghosts. */
     public boolean powerPellet;
+    /** Heart pickup — grants one extra life (stages 2–3). */
+    public boolean extraLife;
     /** Bonus collectible (book / tefillin / hat). */
     public boolean bonusItem;
     /** Base (non-scared) sprite for enemies. */
