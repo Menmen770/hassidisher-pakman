@@ -126,6 +126,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
     public void stop() {
         gameLoop.stop();
+        com.hasidicmaze.sound.SoundManager.get().stopAll();
     }
 
     @Override

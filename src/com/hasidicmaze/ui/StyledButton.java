@@ -1,6 +1,8 @@
 package com.hasidicmaze.ui;
 
 import com.hasidicmaze.Theme;
+import com.hasidicmaze.sound.SoundId;
+import com.hasidicmaze.sound.SoundManager;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -51,6 +53,7 @@ public class StyledButton extends JButton {
             @Override
             public void mouseEntered(MouseEvent e) {
                 hovered = true;
+                SoundManager.get().play(SoundId.MENU_SELECT);
                 repaint();
             }
 
@@ -64,6 +67,7 @@ public class StyledButton extends JButton {
             @Override
             public void mousePressed(MouseEvent e) {
                 pressed = true;
+                SoundManager.get().play(SoundId.MENU_CONFIRM);
                 repaint();
             }
 

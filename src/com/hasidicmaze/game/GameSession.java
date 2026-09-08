@@ -2,6 +2,8 @@ package com.hasidicmaze.game;
 
 import com.hasidicmaze.assets.AssetManager;
 import com.hasidicmaze.map.GameMap;
+import com.hasidicmaze.sound.SoundId;
+import com.hasidicmaze.sound.SoundManager;
 import java.awt.Image;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,7 @@ public final class GameSession {
     private final Maze maze;
     private final GhostAi ghostAi;
     private final Random random = new Random();
+    private final SoundManager sounds = SoundManager.get();
 
     private GameMap gameMap;
     private int score;
@@ -101,6 +104,8 @@ public final class GameSession {
         scattering = true;
         modeTicksLeft = SCATTER_TICKS;
         stopEnemyMotion();
+        sounds.stopAll();
+        sounds.play(SoundId.CREDIT);
     }
 
     /** Keep score/lives and load the next campaign stage. */
@@ -123,6 +128,8 @@ public final class GameSession {
         nextDirection = 'R';
         isPaused = true;
         timedOut = false;
+        sounds.stopAll();
+        sounds.play(SoundId.LEVEL_SWEEP);
     }
 
     public boolean consumeStageCleared() {
@@ -163,6 +170,7 @@ public final class GameSession {
     }
 
     public void tick() {
+        sounds.tickCooldown();
         if (!isPaused && !gameOver) {
             if (huntWarmupTicksLeft > 0) {
                 huntWarmupTicksLeft--;
@@ -189,6 +197,16 @@ public final class GameSession {
                     loseLife(true);
                 }
             }
+            boolean returning = false;
+            for (Entity enemy : maze.getEnemies()) {
+                if (enemy.returningHome) {
+                    returning = true;
+                    break;
+                }
+            }
+            sounds.updateAmbient(true, frightenedTicksLeft > 0, returning);
+        } else {
+            sounds.updateAmbient(false, false, false);
         }
         move();
     }
@@ -217,6 +235,7 @@ public final class GameSession {
             for (Entity enemy : maze.getEnemies()) {
                 maze.updateVelocity(enemy);
             }
+            sounds.play(SoundId.GAME_START);
         }
     }
 
@@ -317,6 +336,7 @@ public final class GameSession {
                     activateFrightenedMode();
                 } else {
                     score += 1;
+                    sounds.playMunch();
                 }
             }
         }
@@ -331,6 +351,8 @@ public final class GameSession {
             bumpPathRecalcAfterMapClear();
             clearFrightenedMode();
             mapsCleared++;
+            sounds.stopAll();
+            sounds.play(SoundId.LEVEL_COMPLETE);
             if (campaignMode) {
                 stageAdvancePending = true;
                 isPaused = true;
@@ -421,6 +443,7 @@ public final class GameSession {
             return;
         }
         score += bonusPoints;
+        sounds.play(SoundId.BONUS_EATEN);
         floatingScores.add(new FloatingScore(
             bonus.x + bonus.width / 2,
             bonus.y + bonus.height / 2,
@@ -455,6 +478,7 @@ public final class GameSession {
     private void activateFrightenedMode() {
         frightenedTicksLeft = FRIGHTENED_TICKS;
         ghostEatStreak = 0;
+        sounds.loop(SoundId.POWER);
         for (Entity enemy : maze.getEnemies()) {
             enemy.eatenThisFright = false;
             if (enemy.returningHome || enemy.eatenScoreTicks > 0) {
@@ -475,6 +499,7 @@ public final class GameSession {
     private void clearFrightenedMode() {
         frightenedTicksLeft = 0;
         ghostEatStreak = 0;
+        sounds.stop(SoundId.POWER);
         for (Entity enemy : maze.getEnemies()) {
             enemy.eatenThisFright = false;
             if (enemy.frightened && !enemy.returningHome) {
@@ -520,6 +545,7 @@ public final class GameSession {
             int points = Math.min(80, 20 * (ghostEatStreak + 1));
             ghostEatStreak++;
             score += points;
+            sounds.play(SoundId.GHOST_EATEN);
             floatingScores.add(new FloatingScore(
                 enemy.x + enemy.width / 2,
                 enemy.y + enemy.height / 2,
@@ -710,8 +736,11 @@ public final class GameSession {
         timedOut = fromTimeout;
         clearFrightenedMode();
         clearBonus();
+        sounds.stopAll();
+        sounds.play(SoundId.DEATH);
         if (lives == 0) {
             gameOver = true;
+            sounds.play(SoundId.GAME_OVER);
             return;
         }
         resetPositions();
