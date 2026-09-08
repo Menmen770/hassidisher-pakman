@@ -15,10 +15,7 @@ import java.awt.FlowLayout;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Image;
-import java.awt.Insets;
 import java.awt.LinearGradientPaint;
 import java.awt.RenderingHints;
 import java.util.ArrayList;
@@ -33,9 +30,10 @@ import javax.swing.border.EmptyBorder;
 
 /** Stage select — RTL vertical list, gold/navy language. */
 public class MapSelectPanel extends AtmospherePanel {
-    private static final int ROW_W = 440;
-    private static final int ROW_H = 62;
-    private static final int GAP = 12;
+    private static final int ROW_W = 480;
+    private static final int ROW_H = 76;
+    private static final int GAP = 14;
+    private static final int PRIZE = 44;
 
     private final Consumer<GameMap> onPlay;
     private GameMap selected = MapCatalog.all().get(0);
@@ -46,54 +44,54 @@ public class MapSelectPanel extends AtmospherePanel {
         this.onPlay = onPlay;
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT));
-        setBorder(new EmptyBorder(32, 48, 22, 48));
+        setBorder(new EmptyBorder(36, 40, 32, 40));
         applyComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
 
-        JPanel head = new JPanel(new BorderLayout(0, 4));
+        JPanel stack = new JPanel();
+        stack.setOpaque(false);
+        stack.setLayout(new BoxLayout(stack, BoxLayout.Y_AXIS));
+
+        JPanel head = new JPanel();
         head.setOpaque(false);
-        head.setBorder(new EmptyBorder(2, 0, 6, 0));
+        head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
+        head.setAlignmentX(CENTER_ALIGNMENT);
         JLabel title = new JLabel("בחירת שלב", SwingConstants.CENTER);
         title.setFont(Theme.display(28));
         title.setForeground(Theme.BG_GOLD);
+        title.setAlignmentX(CENTER_ALIGNMENT);
         JLabel sub = new JLabel("בחר סדר מהרשימה", SwingConstants.CENTER);
         sub.setFont(Theme.body(13));
         sub.setForeground(Theme.BG_STEEL);
-        head.add(title, BorderLayout.NORTH);
-        head.add(sub, BorderLayout.SOUTH);
-        add(head, BorderLayout.NORTH);
+        sub.setAlignmentX(CENTER_ALIGNMENT);
+        head.add(title);
+        head.add(Box.createVerticalStrut(4));
+        head.add(sub);
 
         Board board = new Board();
-        board.setLayout(new BorderLayout());
-        board.setBorder(new EmptyBorder(18, 22, 18, 22));
+        board.setLayout(new BoxLayout(board, BoxLayout.Y_AXIS));
+        board.setBorder(new EmptyBorder(16, 20, 16, 20));
+        board.setAlignmentX(CENTER_ALIGNMENT);
         int listH = ROW_H * 4 + GAP * 3;
-        board.setPreferredSize(new Dimension(ROW_W + 44, listH + 36));
-
-        JPanel list = new JPanel();
-        list.setOpaque(false);
-        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
+        Dimension boardSize = new Dimension(ROW_W + 40, listH + 32);
+        board.setPreferredSize(boardSize);
+        board.setMaximumSize(boardSize);
+        board.setMinimumSize(boardSize);
 
         int n = 0;
         for (GameMap map : MapCatalog.all()) {
             if (n > 0) {
-                list.add(Box.createVerticalStrut(GAP));
+                board.add(Box.createVerticalStrut(GAP));
             }
             StageCard card = new StageCard(map, n);
             cards.add(card);
-            list.add(card);
+            board.add(card);
             n++;
         }
-        board.add(list, BorderLayout.CENTER);
-
-        JPanel mid = new JPanel(new GridBagLayout());
-        mid.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 0, 8, 0);
-        mid.add(board, gbc);
-        add(mid, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 0));
         bottom.setOpaque(false);
-        bottom.setBorder(new EmptyBorder(4, 0, 2, 0));
+        bottom.setAlignmentX(CENTER_ALIGNMENT);
+        bottom.setMaximumSize(new Dimension(Short.MAX_VALUE, 56));
         bottom.applyComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
 
         playButton = new StyledButton("שחק", StyledButton.Variant.PRIMARY);
@@ -108,10 +106,18 @@ public class MapSelectPanel extends AtmospherePanel {
         size(back, 132, 44);
         back.addActionListener(e -> navigate.accept(Screen.MENU));
 
-        // RTL: first added sits on the right
         bottom.add(playButton);
         bottom.add(back);
-        add(bottom, BorderLayout.SOUTH);
+
+        stack.add(Box.createVerticalGlue());
+        stack.add(head);
+        stack.add(Box.createVerticalStrut(16));
+        stack.add(board);
+        stack.add(Box.createVerticalStrut(18));
+        stack.add(bottom);
+        stack.add(Box.createVerticalGlue());
+
+        add(stack, BorderLayout.CENTER);
         refresh();
     }
 
@@ -241,38 +247,38 @@ public class MapSelectPanel extends AtmospherePanel {
 
             // RTL: number chip on the RIGHT
             String num = String.format("%02d", index + 1);
-            g2.setFont(Theme.mono(15));
+            g2.setFont(Theme.mono(16));
             FontMetrics nm = g2.getFontMetrics();
-            int chip = 34;
+            int chip = 40;
             int chipX = w - chip - 14;
             int chipY = (h - chip) / 2;
             g2.setColor(on ? Theme.withAlpha(Theme.BG_BARK, 50) : Theme.withAlpha(Theme.BG_GOLD, 45));
-            g2.fillRoundRect(chipX, chipY, chip, chip, 12, 12);
+            g2.fillRoundRect(chipX, chipY, chip, chip, 14, 14);
             g2.setColor(on ? Theme.BG_BARK : Theme.BG_GOLD);
-            g2.drawString(num, chipX + (chip - nm.stringWidth(num)) / 2, chipY + 23);
+            g2.drawString(num, chipX + (chip - nm.stringWidth(num)) / 2,
+                chipY + (chip + nm.getAscent() - nm.getDescent()) / 2);
 
             // Title — right-aligned, next to the chip
             String name = map.getTitle();
-            g2.setFont(Theme.bodyBold(17));
+            g2.setFont(Theme.bodyBold(19));
             FontMetrics fm = g2.getFontMetrics();
-            int maxText = w - chip - 90;
-            while (fm.stringWidth(name) > maxText && g2.getFont().getSize() > 13) {
+            int maxText = w - chip - PRIZE - 70;
+            while (fm.stringWidth(name) > maxText && g2.getFont().getSize() > 14) {
                 g2.setFont(Theme.bodyBold(g2.getFont().getSize() - 1));
                 fm = g2.getFontMetrics();
             }
-            int titleX = chipX - 14 - fm.stringWidth(name);
+            int titleX = chipX - 16 - fm.stringWidth(name);
             g2.setColor(map.isLocked() ? Theme.MUTED_DARK : (on ? Theme.BG_BARK : Theme.CREAM));
             g2.drawString(name, titleX, (h + fm.getAscent() - fm.getDescent()) / 2);
 
             // Prize icon on the LEFT
             Image prize = AssetManager.get().bonusForStage(index);
             if (prize != null) {
-                int icon = 30;
-                int ix = 16;
-                int iy = (h - icon) / 2;
-                g2.setColor(Theme.withAlpha(on ? Theme.BG_BARK : Theme.BG_NAVY, on ? 40 : 140));
-                g2.fillRoundRect(ix - 4, iy - 4, icon + 8, icon + 8, 12, 12);
-                g2.drawImage(prize, ix, iy, icon, icon, null);
+                int ix = 18;
+                int iy = (h - PRIZE) / 2;
+                g2.setColor(Theme.withAlpha(on ? Theme.BG_BARK : Theme.BG_NAVY, on ? 40 : 150));
+                g2.fillRoundRect(ix - 5, iy - 5, PRIZE + 10, PRIZE + 10, 14, 14);
+                g2.drawImage(prize, ix, iy, PRIZE, PRIZE, null);
             }
 
             g2.dispose();

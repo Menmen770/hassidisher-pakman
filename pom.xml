@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.hasidicmaze</groupId>
-    <artifactId>hasidic-maze</artifactId>
+    <artifactId>hassidisher-pakman</artifactId>
     <version>2.0.0</version>
     <packaging>jar</packaging>
 

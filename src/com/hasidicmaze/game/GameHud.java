@@ -4,9 +4,11 @@ import com.hasidicmaze.Theme;
 import com.hasidicmaze.assets.AssetManager;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.LinearGradientPaint;
 import java.awt.RenderingHints;
 
 /**
@@ -19,7 +21,7 @@ public final class GameHud {
     public int backButtonH = 32;
 
     private final AssetManager assets;
-    private final int bgShiftUp = 8;
+    private final int bgShiftUp = 0;
 
     public GameHud(AssetManager assets) {
         this.assets = assets;
@@ -155,61 +157,90 @@ public final class GameHud {
         int x0 = gameAreaWidth;
         int sw = GameSession.SIDE_W;
 
-        g.setColor(Theme.INK_SOFT);
-        g.fillRect(x0, 0, sw, boardHeight);
+        // Slight overfill so scaled letterbox never shows a 1px seam
+        g.setPaint(new LinearGradientPaint(
+            x0, 0, x0 + sw, 0,
+            new float[]{0f, 1f},
+            new Color[]{Theme.TITLE_BAR, Theme.BG_NAVY}
+        ));
+        g.fillRect(x0, 0, sw + 2, boardHeight);
+
+        final int rail = 3;
+        final int pad = 16;
+        final int heart = 28;
+        final int heartGap = 10;
+        final int maxLives = 3;
 
         g.setColor(Theme.BG_GOLD);
-        g.fillRect(x0, 0, 3, boardHeight);
+        g.fillRect(x0, 0, rail, boardHeight);
 
-        int cx = x0 + sw / 2;
+        int innerL = x0 + rail;
+        int innerW = sw - rail;
+        int cx = innerL + innerW / 2;
 
-        int heartSize = 26;
-        int gap = 10;
-        int heartStartY = 28;
-        for (int i = 0; i < session.getLives(); i++) {
-            int hx = cx - heartSize / 2;
-            int hy = heartStartY + i * (heartSize + gap);
+        // Lives — fixed slots from the top so gaps stay even
+        int livesTop = pad;
+        int lives = Math.min(session.getLives(), maxLives);
+        for (int i = 0; i < lives; i++) {
+            int hx = cx - heart / 2;
+            int hy = livesTop + i * (heart + heartGap);
             if (assets.heart != null) {
-                g.drawImage(assets.heart, hx, hy, heartSize, heartSize, null);
+                g.drawImage(assets.heart, hx, hy, heart, heart, null);
             } else {
-                drawHeart(g, hx, hy, heartSize);
+                drawHeart(g, hx, hy, heart);
             }
         }
+        int livesBottom = livesTop + maxLives * heart + (maxLives - 1) * heartGap;
 
-        g.setColor(Theme.PAC_YELLOW);
-        g.setFont(Theme.mono(24));
+        // Bottom chrome (button + timer)
+        backButtonW = Math.min(90, innerW - 12);
+        backButtonH = 34;
+        backButtonX = cx - backButtonW / 2;
+        backButtonY = boardHeight - pad - backButtonH;
+
+        int timerBaseline = backButtonY - 14;
+        drawMazeTimer(g, session, cx, timerBaseline);
+        drawBackButton(g);
+
+        // Score block — vertically centered between lives and timer
+        int midTop = livesBottom + 12;
+        int midBot = timerBaseline - 18;
+        int midCenter = (midTop + midBot) / 2;
+
+        g.setFont(Theme.mono(22));
+        FontMetrics scoreFm = g.getFontMetrics();
         String scoreStr = String.valueOf(session.getScore());
-        int scoreW = g.getFontMetrics().stringWidth(scoreStr);
-        int scoreY = boardHeight / 2 + 8;
+        int scoreW = scoreFm.stringWidth(scoreStr);
+        int scoreY = midCenter + (scoreFm.getAscent() - scoreFm.getDescent()) / 2 - 8;
+        g.setColor(Theme.PAC_YELLOW);
         g.drawString(scoreStr, cx - scoreW / 2, scoreY);
 
-        g.setColor(Theme.MUTED);
         g.setFont(Theme.body(12));
+        FontMetrics ptsFm = g.getFontMetrics();
         String pts = "נקודות";
-        int pw = g.getFontMetrics().stringWidth(pts);
-        g.drawString(pts, cx - pw / 2, scoreY + 20);
-
-        drawEatenBooks(g, session, x0, scoreY + 48);
-
-        backButtonW = 88;
-        backButtonH = 36;
-        backButtonX = x0 + (sw - backButtonW) / 2;
-        backButtonY = boardHeight - backButtonH - 22;
-        drawMazeTimer(g, session, cx, backButtonY - 12);
-
-        int arc = backButtonH;
-        g.setColor(Theme.withAlpha(Theme.BG_BARK, 120));
-        g.fillRoundRect(backButtonX + 2, backButtonY + 2, backButtonW - 2, backButtonH - 2, arc, arc);
-        g.setColor(Theme.withAlpha(Theme.BG_NAVY, 230));
-        g.fillRoundRect(backButtonX, backButtonY, backButtonW - 1, backButtonH - 1, arc, arc);
+        int pw = ptsFm.stringWidth(pts);
         g.setColor(Theme.BG_TAN);
-        g.setStroke(new BasicStroke(1.8f));
-        g.drawRoundRect(backButtonX, backButtonY, backButtonW - 2, backButtonH - 2, arc, arc);
+        g.drawString(pts, cx - pw / 2, scoreY + ptsFm.getHeight());
+
+        drawEatenBooks(g, session, x0, scoreY + ptsFm.getHeight() + 14);
+    }
+
+    private void drawBackButton(Graphics2D g) {
+        int arc = backButtonH;
+        g.setColor(Theme.withAlpha(Theme.TITLE_BAR, 160));
+        g.fillRoundRect(backButtonX + 1, backButtonY + 2, backButtonW, backButtonH, arc, arc);
+        g.setColor(Theme.withAlpha(Theme.BG_STEEL, 220));
+        g.fillRoundRect(backButtonX, backButtonY, backButtonW, backButtonH, arc, arc);
+        g.setColor(Theme.BG_GOLD);
+        g.setStroke(new BasicStroke(1.6f));
+        g.drawRoundRect(backButtonX, backButtonY, backButtonW - 1, backButtonH - 1, arc, arc);
         g.setColor(Theme.CREAM);
         g.setFont(Theme.bodyBold(14));
+        FontMetrics fm = g.getFontMetrics();
         String back = "חזרה";
-        int bw = g.getFontMetrics().stringWidth(back);
-        g.drawString(back, backButtonX + (backButtonW - bw) / 2 - 1, backButtonY + 24);
+        int tx = backButtonX + (backButtonW - fm.stringWidth(back)) / 2;
+        int ty = backButtonY + (backButtonH + fm.getAscent() - fm.getDescent()) / 2;
+        g.drawString(back, tx, ty);
     }
 
     private void drawEatenBooks(Graphics2D g, GameSession session, int sideLeft, int startY) {
@@ -219,8 +250,9 @@ public final class GameHud {
         int icon = 22;
         int gap = 4;
         int cols = 3;
-        int padRight = 8;
-        int right = sideLeft + GameSession.SIDE_W - padRight;
+        int contentLeft = sideLeft + 3;
+        int contentW = GameSession.SIDE_W - 3;
+        int cx = contentLeft + contentW / 2;
         for (int i = 0; i < session.getEatenBooks().size(); i++) {
             Image img = session.getEatenBooks().get(i);
             if (img == null) {
@@ -228,7 +260,9 @@ public final class GameHud {
             }
             int col = i % cols;
             int row = i / cols;
-            int x = right - (col + 1) * icon - col * gap;
+            int totalW = cols * icon + (cols - 1) * gap;
+            int gridLeft = cx - totalW / 2;
+            int x = gridLeft + col * (icon + gap);
             int y = startY + row * (icon + gap);
             g.drawImage(img, x, y, icon, icon, null);
         }

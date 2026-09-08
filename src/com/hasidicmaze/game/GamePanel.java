@@ -152,6 +152,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         g2.setColor(Theme.INK);
         g2.fillRect(0, 0, panelW, panelH);
+
+        // Extend sidebar bark through top/bottom letterbox so no navy "hole" above hearts
+        int sideScreenX = ox + (int) Math.round(maze.getGameAreaWidth() * scale);
+        g2.setColor(Theme.TITLE_BAR);
+        g2.fillRect(sideScreenX, 0, Math.max(0, panelW - sideScreenX), panelH);
+
         g2.translate(ox, oy);
         g2.scale(scale, scale);
 

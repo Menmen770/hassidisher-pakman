@@ -38,7 +38,7 @@ public class MenuPanel extends AtmospherePanel {
         stack.add(fixed(btn("בחירת שלב", StyledButton.Variant.SECONDARY, 15), 248, 46,
             e -> navigate.accept(Screen.MAP_SELECT)));
         stack.add(Box.createVerticalStrut(12));
-        stack.add(fixed(btn("שיאים גבוהים", StyledButton.Variant.SECONDARY, 15), 248, 46,
+        stack.add(fixed(btn("שיאים", StyledButton.Variant.SECONDARY, 15), 248, 46,
             e -> navigate.accept(Screen.HIGH_SCORES)));
         stack.add(Box.createVerticalStrut(14));
         stack.add(fixed(btn("יציאה", StyledButton.Variant.GHOST, 13), 200, 38,

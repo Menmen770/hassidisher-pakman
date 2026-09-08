@@ -11,13 +11,13 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.LinearGradientPaint;
 import java.awt.RenderingHints;
 import java.util.List;
 import java.util.function.Consumer;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -26,6 +26,7 @@ import javax.swing.border.EmptyBorder;
 /** Top-10 leaderboard — same capsule / gold-navy language as main menu. */
 public class HighScorePanel extends AtmospherePanel {
     private static final int BOARD_WIDTH = 560;
+    private static final int BOARD_HEIGHT = 470;
 
     private final HighScoreManager manager;
     private final JPanel listPanel = new JPanel(new GridLayout(10, 1, 0, 6));
@@ -33,54 +34,65 @@ public class HighScorePanel extends AtmospherePanel {
     public HighScorePanel(HighScoreManager manager, Consumer<Screen> navigate) {
         this.manager = manager;
 
-        setLayout(new BorderLayout(0, 0));
+        setLayout(new BorderLayout());
         setPreferredSize(new Dimension(Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT));
-        setBorder(new EmptyBorder(22, 40, 16, 40));
+        setBorder(new EmptyBorder(36, 40, 32, 40));
 
-        JPanel top = new JPanel(new BorderLayout(0, 4));
-        top.setOpaque(false);
-        top.setBorder(new EmptyBorder(0, 0, 12, 0));
-        JLabel title = new JLabel("שיאים גבוהים", SwingConstants.CENTER);
-        title.setFont(Theme.display(30));
+        JPanel stack = new JPanel();
+        stack.setOpaque(false);
+        stack.setLayout(new BoxLayout(stack, BoxLayout.Y_AXIS));
+
+        JPanel head = new JPanel();
+        head.setOpaque(false);
+        head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
+        head.setAlignmentX(CENTER_ALIGNMENT);
+        JLabel title = new JLabel("שיאים", SwingConstants.CENTER);
+        title.setFont(Theme.display(28));
         title.setForeground(Theme.BG_GOLD);
+        title.setAlignmentX(CENTER_ALIGNMENT);
         JLabel subtitle = new JLabel("עשרת הגדולים", SwingConstants.CENTER);
         subtitle.setFont(Theme.body(13));
         subtitle.setForeground(Theme.BG_STEEL);
-        top.add(title, BorderLayout.NORTH);
-        top.add(subtitle, BorderLayout.SOUTH);
-        add(top, BorderLayout.NORTH);
+        subtitle.setAlignmentX(CENTER_ALIGNMENT);
+        head.add(title);
+        head.add(Box.createVerticalStrut(4));
+        head.add(subtitle);
 
         BoardPanel board = new BoardPanel();
         board.setLayout(new BorderLayout(0, 8));
-        board.setPreferredSize(new Dimension(BOARD_WIDTH, 480));
-        board.setMinimumSize(new Dimension(BOARD_WIDTH, 400));
-        board.setMaximumSize(new Dimension(BOARD_WIDTH, 520));
+        board.setAlignmentX(CENTER_ALIGNMENT);
+        Dimension boardSize = new Dimension(BOARD_WIDTH, BOARD_HEIGHT);
+        board.setPreferredSize(boardSize);
+        board.setMinimumSize(boardSize);
+        board.setMaximumSize(boardSize);
         board.setBorder(new EmptyBorder(16, 18, 16, 18));
         board.add(buildColumnHeader(), BorderLayout.NORTH);
 
         listPanel.setOpaque(false);
         board.add(listPanel, BorderLayout.CENTER);
 
-        JPanel center = new JPanel(new GridBagLayout());
-        center.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1;
-        gbc.weighty = 1;
-        center.add(board, gbc);
-        add(center, BorderLayout.CENTER);
-
-        refresh();
-
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 0));
         bottom.setOpaque(false);
-        bottom.setBorder(new EmptyBorder(10, 0, 0, 0));
-        StyledButton back = new StyledButton("חזרה לתפריט", StyledButton.Variant.SECONDARY);
-        back.setPreferredSize(new Dimension(220, 48));
+        bottom.setAlignmentX(CENTER_ALIGNMENT);
+        bottom.setMaximumSize(new Dimension(Short.MAX_VALUE, 56));
+        StyledButton back = new StyledButton("חזרה", StyledButton.Variant.GHOST);
+        Dimension backSize = new Dimension(132, 44);
+        back.setPreferredSize(backSize);
+        back.setMinimumSize(backSize);
+        back.setMaximumSize(backSize);
         back.addActionListener(e -> navigate.accept(Screen.MENU));
         bottom.add(back);
-        add(bottom, BorderLayout.SOUTH);
+
+        stack.add(Box.createVerticalGlue());
+        stack.add(head);
+        stack.add(Box.createVerticalStrut(16));
+        stack.add(board);
+        stack.add(Box.createVerticalStrut(18));
+        stack.add(bottom);
+        stack.add(Box.createVerticalGlue());
+
+        add(stack, BorderLayout.CENTER);
+        refresh();
     }
 
     private JPanel buildColumnHeader() {

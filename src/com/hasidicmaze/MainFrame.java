@@ -60,7 +60,7 @@ public class MainFrame extends JFrame {
                 setTitle("Hassidisher Pakman");
                 if (scoreManager.isTopScore(score)) {
                     int rank = scoreManager.rankFor(score);
-                    newRecordPanel.prepare(score, rank, mapId);
+                    newRecordPanel.prepare(score, rank);
                     showScreen(Screen.NEW_RECORD);
                 } else {
                     highScorePanel.refresh();
@@ -152,7 +152,7 @@ public class MainFrame extends JFrame {
     }
 
     private void saveNewRecord(String name, int score) {
-        scoreManager.add(name, score, newRecordPanel.getPendingMapId());
+        scoreManager.add(name, score);
     }
 
     public static void launch() {

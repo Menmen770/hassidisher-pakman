@@ -26,7 +26,6 @@ public final class AssetManager {
     /** Default menu / fallback backdrop. */
     public final Image background;
     public final Image wall;
-    public final Image floor;
     public final Image heart;
     public final Image heroUp;
     public final Image heroDown;
@@ -58,7 +57,6 @@ public final class AssetManager {
             backgroundCache.put(BG_IYUNA, background);
         }
         wall = loadUi("wall.png");
-        floor = loadUi("floor.png");
         heart = loadUi("heart.png");
         heroUp = loadCharacter("pacmanUp.png");
         heroDown = loadCharacter("pacmanDown.png");

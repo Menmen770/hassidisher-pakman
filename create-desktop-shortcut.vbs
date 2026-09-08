@@ -10,7 +10,7 @@ link.TargetPath = dir & "\run.bat"
 link.WorkingDirectory = dir
 link.WindowStyle = 1
 link.Description = "Hassidisher Pakman"
-link.IconLocation = dir & "\pac-mandy.ico"
+link.IconLocation = dir & "\Hassidisher Pakman.ico"
 link.Save
 
 WScript.Echo "Desktop shortcut created: Hassidisher Pakman"

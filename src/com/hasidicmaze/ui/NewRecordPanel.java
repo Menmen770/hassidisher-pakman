@@ -36,7 +36,6 @@ public class NewRecordPanel extends AtmospherePanel {
     private final SparkleOverlay sparkles = new SparkleOverlay();
 
     private int pendingScore;
-    private String pendingMapId;
     private final BiConsumer<String, Integer> onSaved;
     private final Consumer<Void> onDone;
 
@@ -176,9 +175,8 @@ public class NewRecordPanel extends AtmospherePanel {
         });
     }
 
-    public void prepare(int score, int rank, String mapId) {
+    public void prepare(int score, int rank) {
         this.pendingScore = score;
-        this.pendingMapId = mapId;
         scoreLine.setText(String.valueOf(score));
         if (rank == 1) {
             headline.setText("שיא עולמי!");
@@ -193,10 +191,6 @@ public class NewRecordPanel extends AtmospherePanel {
             nameField.requestFocusInWindow();
             nameField.selectAll();
         });
-    }
-
-    public String getPendingMapId() {
-        return pendingMapId;
     }
 
     private void submit() {
