@@ -4,13 +4,9 @@
 
 אסוף נקודות, הימנע מרוחות, אסוף פרסים בכל סדר, והשאיר את שמך בטבלת השיאים.
 
----
-
-## צילום מסך
-
-![Hassidisher Pakman — תפריט ומשחק](docs/screenshots/shots.png)
-
----
+<p align="center">
+  <img src="docs/screenshots/shots.jpg" alt="Hassidisher Pakman — תפריט ומשחק" width="900">
+</p>
 
 ## מה יש במשחק
 
@@ -19,8 +15,6 @@
 - **תפריט בעברית** עם רקע מותאם ועיצוב זהב/כחול
 - **טבלת שיאים** שמורה מקומית
 - חלון קבוע, תנועה על רשת אריחים, רקעי מבוך מותאמים לכל שלב
-
----
 
 ## איך מריצים
 
@@ -44,8 +38,6 @@ java -cp bin com.hasidicmaze.App
 | ESC | חזרה לתפריט |
 | Enter | אישור (סוף משחק / שיא חדש) |
 
----
-
 ## מבנה הפרויקט (בקצרה)
 
 ```
@@ -55,11 +47,9 @@ data/scores.txt        שיאים שמורים
 docs/screenshots/      צילומי מסך ל־README
 ```
 
----
-
 ## קרדיטים
 
-בסיס הלמידה המקורי: [Kenny Yip Coding — Pacman in Java](https://youtu.be/lB_J-VNMVpE)
+בסיס הלמידה המקורי: [ImKennyYip / pacman-java](https://github.com/ImKennyYip/pacman-java)
 
 האמנות, התפריטים בעברית, השלבים והעיצוב — מקוריים ל־**Hassidisher Pakman**.
 
