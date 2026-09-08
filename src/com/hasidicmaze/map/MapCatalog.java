@@ -6,17 +6,15 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Six stages — each uses a same-size background so grid scale/origin stay shared.
+ * Four stages — same background pixel size so grid scale/origin stay shared.
  * 0 = wall, 1 = open, 8 = player, 9 = ghost (placed as r/b/p/o in order).
  */
 public final class MapCatalog {
     private static final List<GameMap> MAPS = Arrays.asList(
         sederIyuna(),
         sederGirsa(),
-        lockedSlot(3, "סדר שלישי"),
-        lockedSlot(4, "סדר רביעי"),
-        lockedSlot(5, "סדר חמישי"),
-        lockedSlot(6, "סדר שישי")
+        sederShlishi(),
+        sederReviyi()
     );
 
     private MapCatalog() {}
@@ -30,6 +28,16 @@ public final class MapCatalog {
             .filter(m -> m.getId().equals(id))
             .findFirst()
             .orElse(MAPS.get(0));
+    }
+
+    /** Next stage in campaign loop (1→2→3→4→1…). */
+    public static GameMap nextAfter(String mapId) {
+        for (int i = 0; i < MAPS.size(); i++) {
+            if (MAPS.get(i).getId().equals(mapId)) {
+                return MAPS.get((i + 1) % MAPS.size());
+            }
+        }
+        return MAPS.get(0);
     }
 
     /** סדר עיונא — קל */
@@ -50,7 +58,7 @@ public final class MapCatalog {
             "0001111111111111000",
             "0001000101010001000",
             "0111111118111111110",
-            "0010010001000100100",
+            "0100010001000100010",
             "0111110111110111110",
             "0001011100011101000",
             "0111000110110001110",
@@ -108,42 +116,80 @@ public final class MapCatalog {
         );
     }
 
-    private static GameMap lockedSlot(int index, String title) {
-        return lockedSlot(index, title, "סגור");
+    /** סדר שלישי */
+    private static GameMap sederShlishi() {
+        // Source legend (user): 1=wall, 0=open, 5=ghost, 8=player → catalog: 0/1/9/8
+        String[] digits = {
+            "0000000000000000000",
+            "0001111100011111000",
+            "0111000100010001110",
+            "0001101110111011000",
+            "0111111110111111110",
+            "0100011111111100010",
+            "0111111001001111110",
+            "0110001001001000110",
+            "0111111111111111110",
+            "0011110011100111100",
+            "0010010991990100100",
+            "1111110000000111111",
+            "0001111111111111000",
+            "0001101001001011000",
+            "0111111001001111110",
+            "0100011118111100010",
+            "0111111110111111110",
+            "0001101110111011000",
+            "0111000100010001110",
+            "0001111100011111000",
+            "0000000000000000100"
+        };
+        return fromDigits(
+            "shlishi",
+            "סדר שלישי",
+            "מבוך סדר שלישי",
+            "בינוני",
+            AssetManager.BG_SHLISHI,
+            false,
+            digits,
+            null,
+            -1, -1
+        );
     }
 
-    private static GameMap lockedSlot(int index, String title, String difficulty) {
-        String[] stub = {
-            "XXXXXXXXXXXXXXXXXXX",
-            "X                 X",
-            "X XXXXXXXXXXXXXXX X",
-            "X X             X X",
-            "X X XXXXXXXXXXX X X",
-            "X X X         X X X",
-            "X X X XXXXXXX X X X",
-            "X X X X     X X X X",
-            "X X X X  P  X X X X",
-            "X X X X     X X X X",
-            "X X X XXXXXXX X X X",
-            "X X X         X X X",
-            "X X XXXXXXXXXXX X X",
-            "X X             X X",
-            "X XXXXXXXXXXXXXXX X",
-            "X                 X",
-            "XXXXXXXXXXXXXXXXXXX",
-            "XXXXXXXXXXXXXXXXXXX",
-            "XXXXXXXXXXXXXXXXXXX",
-            "XXXXXXXXXXXXXXXXXXX",
-            "XXXXXXXXXXXXXXXXXXX"
+    /** סדר תפילה */
+    private static GameMap sederReviyi() {
+        String[] digits = {
+            "0000000000000001000",
+            "0111111011101111110",
+            "0100101010111010010",
+            "0100111111111110010",
+            "0111101010101011110",
+            "0001101010101011000",
+            "0111111111111111110",
+            "0101110110110111010",
+            "0111111100011111110",
+            "0001010100010101000",
+            "0111010111110101110",
+            "1111111111111111111",
+            "0001101010101011000",
+            "0001101110111011000",
+            "0111111111111111110",
+            "0101101010101011010",
+            "0110101011101010110",
+            "0111111110111111110",
+            "0100101010101010010",
+            "0111101111111011110",
+            "0000000000000001000"
         };
-        return new GameMap(
-            "locked-" + index,
-            title,
-            "בקרוב — השלב עדיין לא פתוח",
-            difficulty,
-            AssetManager.BG_IYUNA,
-            true,
-            stub
+        return fromDigits(
+            "tefilla",
+            "סדר תפילה",
+            "מבוך סדר תפילה",
+            "בינוני",
+            AssetManager.BG_REVIYI,
+            false,
+            digits,
+            new int[][]{{11, 7}, {11, 8}, {11, 9}, {11, 10}},
+            17, 9
         );
     }
 

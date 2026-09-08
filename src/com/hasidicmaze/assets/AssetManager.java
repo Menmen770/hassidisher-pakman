@@ -14,8 +14,10 @@ import javax.swing.ImageIcon;
 public final class AssetManager {
     private static AssetManager instance;
 
-    public static final String BG_IYUNA = "רקע מבוך עיונא.png";
-    public static final String BG_GIRSA = "רקע מבוך גירסא.png";
+    public static final String BG_IYUNA = "maze-bg-iyuna.png";
+    public static final String BG_GIRSA = "maze-bg-girsa.png";
+    public static final String BG_SHLISHI = "1234567.png";
+    public static final String BG_REVIYI = "maze-bg-reviyi.png";
 
     private static final String DIR_BACKGROUNDS = "backgrounds";
     private static final String DIR_CHARACTERS = "characters";
@@ -34,8 +36,19 @@ public final class AssetManager {
     public final Image orangeEnemy;
     public final Image pinkEnemy;
     public final Image redEnemy;
-    public final Image cherry;
-    public final Image powerFood;
+    public final Image scaredEnemy;
+    public final Image scaredEnemyFlash;
+    public final Image ghostEyes;
+    public final Image coffee;
+    /** Stage bonuses: book1, book2, tefillin bag (13), hat (14). */
+    public final Image book1;
+    public final Image book2;
+    public final Image tefillinBag;
+    public final Image hat;
+    /** Full-screen main menu art (logo baked into BG.png). */
+    public final Image menuBackground;
+    /** Window / taskbar / app icon. */
+    public final Image appIcon;
 
     private final Map<String, Image> backgroundCache = new HashMap<>();
 
@@ -55,8 +68,37 @@ public final class AssetManager {
         orangeEnemy = loadCharacter("orangeGhost.png");
         pinkEnemy = loadCharacter("pinkGhost.png");
         redEnemy = loadCharacter("redGhost.png");
-        cherry = loadUi("cherry.png");
-        powerFood = loadUi("powerFood.png");
+        scaredEnemy = loadCharacter("scaredGhost.png");
+        scaredEnemyFlash = loadCharacter("scaredGhost2.png");
+        ghostEyes = loadCharacter("ghostEyes.png");
+        coffee = loadCharacter("coffee.png");
+        book1 = loadUi("book1.png");
+        book2 = loadUi("book2.png");
+        tefillinBag = loadUi("tefillin.png");
+        hat = loadUi("hat.png");
+        menuBackground = loadBackgroundFile("BG.png");
+        // PNG — OpenJDK does not reliably decode .ico for window icons
+        appIcon = loadUi("logo_ico.png");
+    }
+
+    /** One collectible image per stage (0..3). */
+    public Image bonusForStage(int stageIndex) {
+        return switch (Math.floorMod(stageIndex, 4)) {
+            case 0 -> book1;
+            case 1 -> book2;
+            case 2 -> tefillinBag;
+            default -> hat;
+        };
+    }
+
+    /** Points for the stage collectible. */
+    public int bonusPointsForStage(int stageIndex) {
+        return switch (Math.floorMod(stageIndex, 4)) {
+            case 0 -> 100;
+            case 1 -> 300;
+            case 2 -> 500;
+            default -> 700;
+        };
     }
 
     public static synchronized AssetManager get() {

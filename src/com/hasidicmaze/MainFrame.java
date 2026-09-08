@@ -1,15 +1,20 @@
 package com.hasidicmaze;
 
+import com.hasidicmaze.assets.AssetManager;
 import com.hasidicmaze.game.GamePanel;
 import com.hasidicmaze.map.GameMap;
+import com.hasidicmaze.map.MapCatalog;
 import com.hasidicmaze.score.HighScoreManager;
 import com.hasidicmaze.ui.HighScorePanel;
 import com.hasidicmaze.ui.MapSelectPanel;
 import com.hasidicmaze.ui.MenuPanel;
 import com.hasidicmaze.ui.NewRecordPanel;
+import com.hasidicmaze.ui.TitleBar;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
+import java.awt.Image;
+import java.awt.Taskbar;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -19,12 +24,6 @@ import javax.swing.SwingUtilities;
  * Game content letterboxes/scales inside; map/bg alignment stays unchanged.
  */
 public class MainFrame extends JFrame {
-    public static final String MENU = "MENU";
-    public static final String MAP_SELECT = "MAP_SELECT";
-    public static final String HIGH_SCORES = "HIGH_SCORES";
-    public static final String NEW_RECORD = "NEW_RECORD";
-    public static final String GAME = "GAME";
-
     private final CardLayout cards = new CardLayout();
     private final JPanel root = new JPanel(cards);
     private final Dimension windowSize = Theme.windowSize();
@@ -35,37 +34,44 @@ public class MainFrame extends JFrame {
     private final JPanel gameHost = new JPanel(new BorderLayout());
 
     public MainFrame() {
-        super("Hasidic Maze");
+        super("pac-mandy");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        // Same frame for all cards — user can maximize for true fullscreen-ish play
+        setUndecorated(true);
         setResizable(true);
+        applyAppIcon();
 
         highScorePanel = new HighScorePanel(scoreManager, this::showScreen);
         newRecordPanel = new NewRecordPanel(this::saveNewRecord, ignored -> {
             highScorePanel.refresh();
-            showScreen(HIGH_SCORES);
+            showScreen(Screen.HIGH_SCORES);
         });
 
         gamePanel = new GamePanel(new GamePanel.Listener() {
             @Override
             public void onQuitToMenu() {
                 gamePanel.stop();
-                setTitle("Hasidic Maze");
-                showScreen(MENU);
+                setTitle("pac-mandy");
+                showScreen(Screen.MENU);
             }
 
             @Override
             public void onGameOver(int score, String mapId) {
                 gamePanel.stop();
-                setTitle("Hasidic Maze");
+                setTitle("pac-mandy");
                 if (scoreManager.isTopScore(score)) {
                     int rank = scoreManager.rankFor(score);
                     newRecordPanel.prepare(score, rank, mapId);
-                    showScreen(NEW_RECORD);
+                    showScreen(Screen.NEW_RECORD);
                 } else {
                     highScorePanel.refresh();
-                    showScreen(HIGH_SCORES);
+                    showScreen(Screen.HIGH_SCORES);
                 }
+            }
+
+            @Override
+            public void onCampaignStageCleared(String completedMapId) {
+                GameMap next = MapCatalog.nextAfter(completedMapId);
+                gamePanel.advanceCampaign(next);
             }
         });
 
@@ -73,8 +79,8 @@ public class MainFrame extends JFrame {
         gameHost.setOpaque(true);
         gameHost.add(gamePanel, BorderLayout.CENTER);
 
-        MenuPanel menuPanel = new MenuPanel(this::showScreen);
-        MapSelectPanel mapSelectPanel = new MapSelectPanel(this::startGame, this::showScreen);
+        MenuPanel menuPanel = new MenuPanel(this::showScreen, () -> startGame(MapCatalog.all().get(0), true));
+        MapSelectPanel mapSelectPanel = new MapSelectPanel(map -> startGame(map, false), this::showScreen);
 
         for (JPanel panel : new JPanel[]{
             menuPanel, mapSelectPanel, highScorePanel, newRecordPanel, gameHost
@@ -83,37 +89,62 @@ public class MainFrame extends JFrame {
             panel.setMinimumSize(new Dimension(640, 480));
         }
 
-        root.add(menuPanel, MENU);
-        root.add(mapSelectPanel, MAP_SELECT);
-        root.add(highScorePanel, HIGH_SCORES);
-        root.add(newRecordPanel, NEW_RECORD);
-        root.add(gameHost, GAME);
+        root.add(menuPanel, Screen.MENU.name());
+        root.add(mapSelectPanel, Screen.MAP_SELECT.name());
+        root.add(highScorePanel, Screen.HIGH_SCORES.name());
+        root.add(newRecordPanel, Screen.NEW_RECORD.name());
+        root.add(gameHost, Screen.GAME.name());
         root.setPreferredSize(windowSize);
+        root.setBackground(Theme.INK);
 
-        setContentPane(root);
-        setSize(windowSize);
-        setMinimumSize(new Dimension(640, 480));
+        JPanel shell = new JPanel(new BorderLayout());
+        shell.setBackground(Theme.TITLE_BAR);
+        shell.add(new TitleBar(this), BorderLayout.NORTH);
+        shell.add(root, BorderLayout.CENTER);
+
+        setContentPane(shell);
+        setSize(windowSize.width, windowSize.height + TitleBar.HEIGHT);
+        setMinimumSize(new Dimension(640, 480 + TitleBar.HEIGHT));
         setLocationRelativeTo(null);
-        showScreen(MENU);
+        showScreen(Screen.MENU);
     }
 
-    private void showScreen(String name) {
-        cards.show(root, name);
+    private void applyAppIcon() {
+        Image icon = AssetManager.get().appIcon;
+        if (icon == null) {
+            return;
+        }
+        java.util.List<Image> icons = new java.util.ArrayList<>();
+        for (int size : new int[] {16, 32, 48, 64}) {
+            Image scaled = icon.getScaledInstance(size, size, Image.SCALE_SMOOTH);
+            icons.add(new javax.swing.ImageIcon(scaled).getImage());
+        }
+        setIconImages(icons);
+        try {
+            if (Taskbar.isTaskbarSupported()) {
+                Taskbar.getTaskbar().setIconImage(icons.get(icons.size() - 1));
+            }
+        } catch (Exception ignored) {
+            // Taskbar icon not available on this platform / JDK
+        }
+    }
+
+    private void showScreen(Screen screen) {
+        cards.show(root, screen.name());
         root.revalidate();
         root.repaint();
-        if (HIGH_SCORES.equals(name)) {
+        if (screen == Screen.HIGH_SCORES) {
             highScorePanel.refresh();
         }
     }
 
-    private void startGame(GameMap map) {
+    private void startGame(GameMap map, boolean campaign) {
         if (map == null || map.isLocked()) {
             return;
         }
-        showScreen(GAME);
-        gamePanel.startSession(map);
-        setTitle("Hasidic Maze — " + map.getTitle());
-        // Do not pack/resize — game scales inside the same window
+        showScreen(Screen.GAME);
+        gamePanel.startSession(map, campaign);
+        setTitle("pac-mandy");
         SwingUtilities.invokeLater(() -> {
             gamePanel.requestFocusInWindow();
             gamePanel.repaint();

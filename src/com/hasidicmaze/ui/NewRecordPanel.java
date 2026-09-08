@@ -27,9 +27,7 @@ import javax.swing.Timer;
 import javax.swing.border.AbstractBorder;
 import javax.swing.border.EmptyBorder;
 
-/**
- * Celebration screen when the player breaks into the top-10 — asks for a name.
- */
+/** New high-score name entry — warm oak card. */
 public class NewRecordPanel extends AtmospherePanel {
     private final JLabel headline = new JLabel("שיא חדש!", SwingConstants.CENTER);
     private final JLabel rankLine = new JLabel("", SwingConstants.CENTER);
@@ -84,33 +82,33 @@ public class NewRecordPanel extends AtmospherePanel {
         gc.fill = GridBagConstraints.HORIZONTAL;
         gc.weightx = 1;
 
-        headline.setFont(Theme.display(40));
-        headline.setForeground(Theme.GOLD_BRIGHT);
+        headline.setFont(Theme.display(36));
+        headline.setForeground(Theme.BG_GOLD);
         gc.gridy = 0;
         gc.insets = new Insets(0, 0, 8, 0);
         card.add(headline, gc);
 
-        rankLine.setFont(Theme.bodyBold(18));
-        rankLine.setForeground(Theme.CREAM);
+        rankLine.setFont(Theme.bodyBold(17));
+        rankLine.setForeground(Theme.MUTED);
         gc.gridy = 1;
         gc.insets = new Insets(0, 0, 16, 0);
         card.add(rankLine, gc);
 
         scoreLine.setFont(Theme.mono(48));
-        scoreLine.setForeground(Theme.GOLD_BRIGHT);
+        scoreLine.setForeground(Theme.CREAM);
         gc.gridy = 2;
         gc.insets = new Insets(0, 0, 6, 0);
         card.add(scoreLine, gc);
 
         JLabel pts = new JLabel("נקודות", SwingConstants.CENTER);
-        pts.setFont(Theme.body(16));
+        pts.setFont(Theme.body(15));
         pts.setForeground(Theme.MUTED);
         gc.gridy = 3;
         gc.insets = new Insets(0, 0, 22, 0);
         card.add(pts, gc);
 
         JLabel prompt = new JLabel("מה השם שלך?", SwingConstants.CENTER);
-        prompt.setFont(Theme.bodyBold(17));
+        prompt.setFont(Theme.bodyBold(16));
         prompt.setForeground(Theme.CREAM);
         gc.gridy = 4;
         gc.insets = new Insets(0, 0, 12, 0);
@@ -124,10 +122,10 @@ public class NewRecordPanel extends AtmospherePanel {
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         buttons.setOpaque(false);
         buttons.setPreferredSize(new Dimension(400, 52));
-        StyledButton save = new StyledButton("שמור שיא");
-        save.setPreferredSize(new Dimension(180, 48));
+        StyledButton save = new StyledButton("שמור שיא", StyledButton.Variant.PRIMARY);
+        save.setPreferredSize(new Dimension(180, 50));
         save.addActionListener(e -> submit());
-        StyledButton skip = new StyledButton("דלג");
+        StyledButton skip = new StyledButton("דלג", StyledButton.Variant.GHOST);
         skip.setPreferredSize(new Dimension(120, 48));
         skip.addActionListener(e -> {
             onSaved.accept("Player", pendingScore);
@@ -136,7 +134,6 @@ public class NewRecordPanel extends AtmospherePanel {
         buttons.add(save);
         buttons.add(skip);
         gc.gridy = 6;
-        gc.insets = new Insets(0, 0, 4, 0);
         card.add(buttons, gc);
 
         root.add(card, new GridBagConstraints());
@@ -146,24 +143,27 @@ public class NewRecordPanel extends AtmospherePanel {
     private void styleNameField() {
         nameField.setFont(Theme.bodyBold(20));
         nameField.setForeground(Theme.CREAM);
-        nameField.setCaretColor(Theme.GOLD_BRIGHT);
-        nameField.setBackground(new Color(18, 24, 38));
+        nameField.setCaretColor(Theme.BG_GOLD);
+        nameField.setBackground(Theme.BG_NAVY);
         nameField.setHorizontalAlignment(SwingConstants.CENTER);
-        nameField.setPreferredSize(new Dimension(280, 48));
+        nameField.setPreferredSize(new Dimension(280, 50));
         nameField.setBorder(new AbstractBorder() {
             @Override
             public void paintBorder(java.awt.Component c, Graphics g, int x, int y, int w, int h) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(Theme.GOLD);
-                g2.setStroke(new BasicStroke(1.6f));
-                g2.drawRoundRect(x + 1, y + 1, w - 3, h - 3, 12, 12);
+                int arc = h;
+                g2.setColor(Theme.BG_NAVY);
+                g2.fillRoundRect(x, y, w - 1, h - 1, arc, arc);
+                g2.setColor(Theme.BG_GOLD);
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawRoundRect(x + 1, y + 1, w - 3, h - 3, arc, arc);
                 g2.dispose();
             }
 
             @Override
             public Insets getBorderInsets(java.awt.Component c) {
-                return new Insets(10, 14, 10, 14);
+                return new Insets(10, 18, 10, 18);
             }
         });
         nameField.addKeyListener(new KeyAdapter() {
@@ -222,27 +222,31 @@ public class NewRecordPanel extends AtmospherePanel {
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(new Color(18, 24, 38, 225));
-            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 22, 22);
-            g2.setStroke(new BasicStroke(2f));
-            g2.setColor(new Color(240, 198, 96, 200));
-            g2.drawRoundRect(2, 2, getWidth() - 5, getHeight() - 5, 20, 20);
-            g2.setColor(new Color(212, 168, 75, 70));
+            int w = getWidth();
+            int h = getHeight();
+            int arc = 28;
+            g2.setColor(Theme.withAlpha(Theme.BG_BARK, 100));
+            g2.fillRoundRect(4, 5, w - 8, h - 6, arc, arc);
+            g2.setPaint(new java.awt.LinearGradientPaint(0, 0, 0, h, new float[]{0f, 1f},
+                new Color[]{Theme.INK_SOFT, Theme.withAlpha(Theme.BG_BARK, 220)}));
+            g2.fillRoundRect(0, 0, w - 1, h - 1, arc, arc);
+            g2.setStroke(new BasicStroke(2.4f));
+            g2.setColor(Theme.BG_GOLD);
+            g2.drawRoundRect(1, 1, w - 3, h - 3, arc, arc);
             g2.setStroke(new BasicStroke(1f));
-            g2.drawRoundRect(8, 8, getWidth() - 17, getHeight() - 17, 16, 16);
-            g2.setColor(new Color(240, 198, 96, 35));
-            g2.fillOval(getWidth() / 2 - 120, -40, 240, 120);
+            g2.setColor(Theme.withAlpha(Theme.BG_TAN, 110));
+            g2.drawRoundRect(7, 7, w - 15, h - 15, arc - 8, arc - 8);
             g2.dispose();
             super.paintComponent(g);
         }
     }
 
     private static final class SparkleOverlay extends JPanel {
-        private final float[] x = new float[28];
-        private final float[] y = new float[28];
-        private final float[] vy = new float[28];
-        private final float[] size = new float[28];
-        private final float[] alpha = new float[28];
+        private final float[] x = new float[18];
+        private final float[] y = new float[18];
+        private final float[] vy = new float[18];
+        private final float[] size = new float[18];
+        private final float[] alpha = new float[18];
         private final Random rng = new Random();
         private Timer timer;
 
@@ -258,7 +262,7 @@ public class NewRecordPanel extends AtmospherePanel {
             timer = new Timer(33, e -> {
                 for (int i = 0; i < x.length; i++) {
                     y[i] += vy[i];
-                    alpha[i] -= 0.012f;
+                    alpha[i] -= 0.010f;
                     if (alpha[i] <= 0 || y[i] > getHeight() + 10) {
                         reset(i, false);
                     }
@@ -280,9 +284,9 @@ public class NewRecordPanel extends AtmospherePanel {
             int h = Math.max(getHeight(), Theme.WINDOW_HEIGHT);
             x[i] = rng.nextFloat() * w;
             y[i] = scattered ? rng.nextFloat() * h : -10 - rng.nextFloat() * 40;
-            vy[i] = 0.8f + rng.nextFloat() * 1.8f;
-            size[i] = 2f + rng.nextFloat() * 4f;
-            alpha[i] = 0.35f + rng.nextFloat() * 0.55f;
+            vy[i] = 0.5f + rng.nextFloat() * 1.2f;
+            size[i] = 1.5f + rng.nextFloat() * 2.5f;
+            alpha[i] = 0.25f + rng.nextFloat() * 0.45f;
         }
 
         @Override
@@ -291,7 +295,8 @@ public class NewRecordPanel extends AtmospherePanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             for (int i = 0; i < x.length; i++) {
                 int a = Math.max(0, Math.min(255, (int) (alpha[i] * 255)));
-                g2.setColor(new Color(240, 198, 96, a));
+                g2.setColor(new Color(Theme.PAC_YELLOW.getRed(), Theme.PAC_YELLOW.getGreen(),
+                    Theme.PAC_YELLOW.getBlue(), a));
                 float s = size[i];
                 g2.fillOval((int) x[i], (int) y[i], (int) s, (int) s);
             }

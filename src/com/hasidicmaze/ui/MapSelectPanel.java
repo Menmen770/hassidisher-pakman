@@ -1,131 +1,188 @@
 package com.hasidicmaze.ui;
 
+import com.hasidicmaze.Screen;
 import com.hasidicmaze.Theme;
+import com.hasidicmaze.assets.AssetManager;
 import com.hasidicmaze.map.GameMap;
 import com.hasidicmaze.map.MapCatalog;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GridLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.LinearGradientPaint;
 import java.awt.RenderingHints;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
+/** Stage select — clean vertical list matching the main-menu language. */
 public class MapSelectPanel extends AtmospherePanel {
+    private static final int ROW_W = 420;
+    private static final int ROW_H = 64;
+    private static final int GAP = 12;
+
     private final Consumer<GameMap> onPlay;
-    private final Consumer<String> navigate;
-    private GameMap selected = MapCatalog.all().stream()
-        .filter(m -> !m.isLocked())
-        .findFirst()
-        .orElse(MapCatalog.all().get(0));
+    private GameMap selected = MapCatalog.all().get(0);
     private final StyledButton playButton;
+    private final List<StageCard> cards = new ArrayList<>();
 
-    public MapSelectPanel(Consumer<GameMap> onPlay, Consumer<String> navigate) {
+    public MapSelectPanel(Consumer<GameMap> onPlay, Consumer<Screen> navigate) {
         this.onPlay = onPlay;
-        this.navigate = navigate;
-        setLayout(new BorderLayout(0, 16));
+        setLayout(new BorderLayout());
         setPreferredSize(new Dimension(Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT));
-        setBorder(new EmptyBorder(24, 28, 24, 28));
+        setBorder(new EmptyBorder(32, 48, 22, 48));
 
-        JLabel title = new JLabel("בחירת סדר", SwingConstants.CENTER);
-        title.setFont(Theme.display(36));
-        title.setForeground(Theme.GOLD_BRIGHT);
-        add(title, BorderLayout.NORTH);
+        JPanel head = new JPanel(new BorderLayout(0, 4));
+        head.setOpaque(false);
+        head.setBorder(new EmptyBorder(2, 0, 6, 0));
+        JLabel title = new JLabel("בחירת שלב", SwingConstants.CENTER);
+        title.setFont(Theme.display(28));
+        title.setForeground(Theme.BG_GOLD);
+        JLabel sub = new JLabel("בחר סדר מהרשימה", SwingConstants.CENTER);
+        sub.setFont(Theme.body(13));
+        sub.setForeground(Theme.BG_STEEL);
+        head.add(title, BorderLayout.NORTH);
+        head.add(sub, BorderLayout.SOUTH);
+        add(head, BorderLayout.NORTH);
 
-        JPanel grid = new JPanel(new GridLayout(2, 3, 14, 14));
-        grid.setOpaque(false);
+        Board board = new Board();
+        board.setLayout(new BorderLayout());
+        board.setBorder(new EmptyBorder(18, 22, 18, 22));
+        int listH = ROW_H * 4 + GAP * 3;
+        board.setPreferredSize(new Dimension(ROW_W + 44, listH + 36));
+
+        JPanel list = new JPanel();
+        list.setOpaque(false);
+        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
+
+        int n = 0;
         for (GameMap map : MapCatalog.all()) {
-            grid.add(new MapCard(map));
+            if (n > 0) {
+                list.add(Box.createVerticalStrut(GAP));
+            }
+            StageCard card = new StageCard(map, n);
+            cards.add(card);
+            list.add(card);
+            n++;
         }
-        add(grid, BorderLayout.CENTER);
+        board.add(list, BorderLayout.CENTER);
+
+        JPanel mid = new JPanel(new GridBagLayout());
+        mid.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 0, 8, 0);
+        mid.add(board, gbc);
+        add(mid, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 0));
         bottom.setOpaque(false);
-        StyledButton back = new StyledButton("חזרה");
-        back.setPreferredSize(new Dimension(180, 48));
-        back.addActionListener(e -> navigate.accept("MENU"));
-        playButton = new StyledButton("שחק בסדר זה");
-        playButton.setPreferredSize(new Dimension(220, 48));
+        bottom.setBorder(new EmptyBorder(4, 0, 2, 0));
+
+        StyledButton back = new StyledButton("חזרה", StyledButton.Variant.GHOST);
+        size(back, 132, 44);
+        back.addActionListener(e -> navigate.accept(Screen.MENU));
+
+        playButton = new StyledButton("שחק", StyledButton.Variant.PRIMARY);
+        size(playButton, 168, 50);
         playButton.addActionListener(e -> {
             if (selected != null && !selected.isLocked()) {
                 onPlay.accept(selected);
             }
         });
-        updatePlayEnabled();
+
         bottom.add(back);
         bottom.add(playButton);
         add(bottom, BorderLayout.SOUTH);
+        refresh();
     }
 
-    private void updatePlayEnabled() {
-        boolean ok = selected != null && !selected.isLocked();
-        playButton.setEnabled(ok);
-        playButton.setText(ok ? "שחק בסדר זה" : "סגור — בקרוב");
+    private static void size(StyledButton b, int w, int h) {
+        Dimension d = new Dimension(w, h);
+        b.setPreferredSize(d);
+        b.setMinimumSize(d);
+        b.setMaximumSize(d);
     }
 
-    private class MapCard extends JPanel {
+    private void select(GameMap map) {
+        if (map == null || map.isLocked()) {
+            return;
+        }
+        selected = map;
+        refresh();
+    }
+
+    private void refresh() {
+        playButton.setEnabled(selected != null && !selected.isLocked());
+        for (StageCard c : cards) {
+            c.repaint();
+        }
+    }
+
+    private static final class Board extends JPanel {
+        Board() {
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
+            int arc = 24;
+            g2.setColor(Theme.withAlpha(Theme.BG_BARK, 80));
+            g2.fillRoundRect(4, 5, w - 8, h - 6, arc, arc);
+            g2.setPaint(new LinearGradientPaint(0, 0, 0, h, new float[]{0f, 1f},
+                new Color[]{Theme.INK_SOFT, Theme.withAlpha(Theme.BG_BARK, 200)}));
+            g2.fillRoundRect(0, 0, w - 1, h - 1, arc, arc);
+            g2.setColor(Theme.withAlpha(Theme.BG_GOLD, 200));
+            g2.setStroke(new BasicStroke(2f));
+            g2.drawRoundRect(1, 1, w - 3, h - 3, arc, arc);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private class StageCard extends JPanel {
         private final GameMap map;
+        private final int index;
         private boolean hovered;
 
-        MapCard(GameMap map) {
+        StageCard(GameMap map, int index) {
             this.map = map;
+            this.index = index;
             setOpaque(false);
+            Dimension d = new Dimension(ROW_W, ROW_H);
+            setPreferredSize(d);
+            setMinimumSize(d);
+            setMaximumSize(d);
+            setAlignmentX(CENTER_ALIGNMENT);
             setCursor(map.isLocked()
                 ? Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR)
                 : Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setLayout(new BorderLayout(8, 8));
-            setBorder(new EmptyBorder(12, 14, 12, 14));
-
-            String titleText = map.isLocked() ? map.getTitle() : map.getTitle();
-            JLabel name = new JLabel(titleText, SwingConstants.RIGHT);
-            name.setFont(Theme.bodyBold(18));
-            name.setForeground(map.isLocked() ? Theme.MUTED : Theme.CREAM);
-            name.setOpaque(false);
-
-            JLabel diff = new JLabel(
-                map.isLocked() ? map.getDifficulty() + " · נעול" : map.getDifficulty(),
-                SwingConstants.RIGHT
-            );
-            diff.setFont(Theme.bodyBold(13));
-            diff.setForeground(map.isLocked() ? Theme.MUTED : Theme.GOLD);
-            diff.setOpaque(false);
-
-            String subtitle = map.isLocked() ? "בקרוב" : map.getSubtitle();
-            JLabel desc = new JLabel("<html><div style='text-align:right'>" + subtitle + "</div></html>");
-            desc.setFont(Theme.body(13));
-            desc.setForeground(Theme.MUTED);
-            desc.setOpaque(false);
-
-            JPanel mini = map.isLocked() ? lockedPreview() : new MiniMapPreview(map);
-            mini.setPreferredSize(new Dimension(120, 96));
-
-            JPanel text = new JPanel(new BorderLayout(4, 6));
-            text.setOpaque(false);
-            JPanel top = new JPanel(new BorderLayout());
-            top.setOpaque(false);
-            top.add(name, BorderLayout.CENTER);
-            top.add(diff, BorderLayout.EAST);
-            text.add(top, BorderLayout.NORTH);
-            text.add(desc, BorderLayout.CENTER);
-
-            add(mini, BorderLayout.WEST);
-            add(text, BorderLayout.CENTER);
 
             addMouseListener(new java.awt.event.MouseAdapter() {
                 @Override
                 public void mouseEntered(java.awt.event.MouseEvent e) {
-                    if (map.isLocked()) {
-                        return;
+                    if (!map.isLocked()) {
+                        hovered = true;
+                        repaint();
                     }
-                    hovered = true;
-                    repaint();
                 }
 
                 @Override
@@ -139,9 +196,7 @@ public class MapSelectPanel extends AtmospherePanel {
                     if (map.isLocked()) {
                         return;
                     }
-                    selected = map;
-                    updatePlayEnabled();
-                    MapSelectPanel.this.repaint();
+                    select(map);
                     if (e.getClickCount() == 2) {
                         onPlay.accept(map);
                     }
@@ -149,86 +204,75 @@ public class MapSelectPanel extends AtmospherePanel {
             });
         }
 
-        private JPanel lockedPreview() {
-            return new JPanel() {
-                {
-                    setOpaque(false);
-                }
-
-                @Override
-                protected void paintComponent(Graphics g) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(30, 36, 48, 220));
-                    g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-                    g2.setColor(Theme.MUTED);
-                    g2.setFont(Theme.bodyBold(16));
-                    String lock = "נעול";
-                    int tw = g2.getFontMetrics().stringWidth(lock);
-                    g2.drawString(lock, (getWidth() - tw) / 2, getHeight() / 2 + 6);
-                    g2.setColor(new Color(212, 168, 75, 70));
-                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-                    g2.dispose();
-                }
-            };
-        }
-
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            boolean isSelected = !map.isLocked() && selected.getId().equals(map.getId());
-            if (map.isLocked()) {
-                g2.setColor(new Color(18, 22, 32, 210));
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+            int w = getWidth();
+            int h = getHeight();
+            boolean on = !map.isLocked() && selected.getId().equals(map.getId());
+            int arc = h;
+
+            g2.setColor(Theme.withAlpha(Theme.BG_BARK, 100));
+            g2.fillRoundRect(2, 3, w - 4, h - 3, arc, arc);
+
+            if (on) {
+                g2.setPaint(new LinearGradientPaint(0, 0, 0, h, new float[]{0f, 0.5f, 1f},
+                    new Color[]{Theme.BG_GOLD, Theme.BG_ORANGE, Theme.BG_RUST}));
+            } else if (hovered) {
+                g2.setPaint(new LinearGradientPaint(0, 0, 0, h, new float[]{0f, 1f},
+                    new Color[]{Theme.INK_SOFT, Theme.withAlpha(Theme.BG_BARK, 200)}));
             } else {
-                g2.setColor(isSelected ? new Color(40, 56, 86, 230) : new Color(24, 32, 48, 200));
+                g2.setPaint(new LinearGradientPaint(0, 0, 0, h, new float[]{0f, 1f},
+                    new Color[]{Theme.withAlpha(Theme.BG_NAVY, 230), Theme.withAlpha(Theme.BG_BARK, 170)}));
             }
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
-            g2.setColor(map.isLocked()
-                ? new Color(90, 96, 110, 120)
-                : (isSelected || hovered ? Theme.GOLD : new Color(212, 168, 75, 90)));
-            g2.setStroke(new java.awt.BasicStroke(isSelected ? 2.4f : 1.2f));
-            g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 16, 16);
-            g2.dispose();
-            super.paintComponent(g);
-        }
-    }
+            g2.fillRoundRect(0, 0, w - 1, h - 1, arc, arc);
 
-    /** Tiny wall/path preview of the maze. */
-    private static class MiniMapPreview extends JPanel {
-        private final GameMap map;
+            g2.setColor(on ? Theme.BG_BARK : (hovered ? Theme.BG_GOLD : Theme.BG_TAN));
+            g2.setStroke(new BasicStroke(on ? 2.2f : 1.6f));
+            g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
 
-        MiniMapPreview(GameMap map) {
-            this.map = map;
-            setOpaque(false);
-        }
+            // Number
+            String num = String.format("%02d", index + 1);
+            g2.setFont(Theme.mono(15));
+            FontMetrics nm = g2.getFontMetrics();
+            int chip = 34;
+            int cx = 14;
+            int cy = (h - chip) / 2;
+            g2.setColor(on ? Theme.withAlpha(Theme.BG_BARK, 50) : Theme.withAlpha(Theme.BG_GOLD, 45));
+            g2.fillRoundRect(cx, cy, chip, chip, 12, 12);
+            g2.setColor(on ? Theme.BG_BARK : Theme.BG_GOLD);
+            g2.drawString(num, cx + (chip - nm.stringWidth(num)) / 2, cy + 23);
 
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int rows = map.getRows();
-            int cols = map.getCols();
-            float cellW = (getWidth() - 4f) / cols;
-            float cellH = (getHeight() - 4f) / rows;
-            for (int r = 0; r < rows; r++) {
-                for (int c = 0; c < cols; c++) {
-                    char ch = map.charAt(r, c);
-                    if (ch == 'X') {
-                        g2.setColor(Theme.NAVY);
-                    } else if (ch == 'P') {
-                        g2.setColor(Theme.GOLD_BRIGHT);
-                    } else if (ch == 'b' || ch == 'o' || ch == 'p' || ch == 'r') {
-                        g2.setColor(Theme.ACCENT);
-                    } else {
-                        g2.setColor(new Color(60, 72, 96));
-                    }
-                    g2.fillRect(2 + Math.round(c * cellW), 2 + Math.round(r * cellH),
-                        Math.max(1, Math.round(cellW)), Math.max(1, Math.round(cellH)));
-                }
+            // Title + difficulty in one clear row stack
+            String name = map.getTitle();
+            g2.setFont(Theme.bodyBold(16));
+            FontMetrics fm = g2.getFontMetrics();
+            int textX = 60;
+            int maxText = w - 120;
+            while (fm.stringWidth(name) > maxText && g2.getFont().getSize() > 13) {
+                g2.setFont(Theme.bodyBold(g2.getFont().getSize() - 1));
+                fm = g2.getFontMetrics();
             }
-            g2.setColor(Theme.GOLD);
-            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+            g2.setColor(map.isLocked() ? Theme.MUTED_DARK : (on ? Theme.BG_BARK : Theme.CREAM));
+            g2.drawString(name, textX, h / 2 - 2);
+
+            g2.setFont(Theme.body(12));
+            g2.setColor(on ? Theme.withAlpha(Theme.BG_BARK, 180) : Theme.BG_STEEL);
+            g2.drawString(map.getDifficulty(), textX, h / 2 + 16);
+
+            // Prize
+            Image prize = AssetManager.get().bonusForStage(index);
+            if (prize != null) {
+                int icon = 30;
+                int ix = w - icon - 18;
+                int iy = (h - icon) / 2;
+                g2.drawImage(prize, ix, iy, icon, icon, null);
+            }
+
             g2.dispose();
         }
     }

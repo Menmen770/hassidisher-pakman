@@ -3,7 +3,7 @@ package com.hasidicmaze;
 import com.hasidicmaze.assets.AssetManager;
 
 /**
- * Entry point for Hasidic Maze.
+ * Entry point for pac-mandy.
  */
 public class App {
     public static void main(String[] args) {

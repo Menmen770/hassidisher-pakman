@@ -74,16 +74,16 @@ public final class HighScoreManager {
     }
 
     private void seedDefaults() {
-        scores.add(new HighScore("NOT.N.T", 481, "courtyard", 0));
-        scores.add(new HighScore("MenMen", 411, "courtyard", 0));
-        scores.add(new HighScore("Igor", 399, "twin-halls", 0));
-        scores.add(new HighScore("Shmuel", 350, "crossroads", 0));
-        scores.add(new HighScore("Oded", 294, "spiral-gate", 0));
-        scores.add(new HighScore("Eitan", 288, "courtyard", 0));
-        scores.add(new HighScore("Nattai", 277, "twin-halls", 0));
-        scores.add(new HighScore("Dvir", 255, "crossroads", 0));
-        scores.add(new HighScore("Shneor", 241, "courtyard", 0));
-        scores.add(new HighScore("LeviYitzchak", 228, "spiral-gate", 0));
+        scores.add(new HighScore("NOT.N.T", 481, "iyuna", 0));
+        scores.add(new HighScore("MenMen", 411, "iyuna", 0));
+        scores.add(new HighScore("Igor", 399, "girsa", 0));
+        scores.add(new HighScore("Shmuel", 350, "shlishi", 0));
+        scores.add(new HighScore("Oded", 294, "iyuna", 0));
+        scores.add(new HighScore("Eitan", 288, "iyuna", 0));
+        scores.add(new HighScore("Nattai", 277, "girsa", 0));
+        scores.add(new HighScore("Dvir", 255, "shlishi", 0));
+        scores.add(new HighScore("Shneor", 241, "iyuna", 0));
+        scores.add(new HighScore("LeviYitzchak", 228, "girsa", 0));
         Collections.sort(scores);
     }
 

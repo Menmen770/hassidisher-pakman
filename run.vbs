@@ -9,7 +9,7 @@ If fso.FolderExists(dir & "\bin\src") Then fso.DeleteFolder dir & "\bin\src", Tr
 
 rc = sh.Run("cmd /c javac -encoding UTF-8 -d bin src\com\hasidicmaze\*.java src\com\hasidicmaze\*\*.java", 0, True)
 If rc <> 0 Then
-  MsgBox "Compile failed", 16, "Hasidic Maze"
+  MsgBox "Compile failed", 16, "pac-mandy"
   WScript.Quit rc
 End If
 
