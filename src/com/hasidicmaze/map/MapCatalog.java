@@ -11,10 +11,10 @@ import java.util.List;
  */
 public final class MapCatalog {
     private static final List<GameMap> MAPS = Arrays.asList(
+        shacharit(),
         sederIyuna(),
         sederGirsa(),
-        sederShlishi(),
-        sederReviyi()
+        sederErev()
     );
 
     private MapCatalog() {}
@@ -40,7 +40,45 @@ public final class MapCatalog {
         return MAPS.get(0);
     }
 
-    /** סדר עיונא — קל */
+    /** שחרית — ראשון, שקית תפילין */
+    private static GameMap shacharit() {
+        String[] digits = {
+            "0000000000000001000",
+            "0111111011101111110",
+            "0100101010111010010",
+            "0100111111111110010",
+            "0111101010101011110",
+            "0001101010101011000",
+            "0111111111111111110",
+            "0101110110110111010",
+            "0111111100011111110",
+            "0001010100010101000",
+            "0111010111110101110",
+            "1111111111111111111",
+            "0001101010101011000",
+            "0001101110111011000",
+            "0111111111111111110",
+            "0101101010101011010",
+            "0110101011101010110",
+            "0111111110111111110",
+            "0100101010101010010",
+            "0111101111111011110",
+            "0000000000000001000"
+        };
+        return fromDigits(
+            "shacharit",
+            "שחרית",
+            "מבוך שחרית",
+            "",
+            AssetManager.BG_REVIYI,
+            false,
+            digits,
+            new int[][]{{11, 7}, {11, 8}, {11, 9}, {11, 10}},
+            17, 9
+        );
+    }
+
+    /** סדר עיונא — שני */
     private static GameMap sederIyuna() {
         String[] digits = {
             "0000000000000000000",
@@ -69,7 +107,7 @@ public final class MapCatalog {
             "iyuna",
             "סדר עיונא",
             "מבוך עיונא",
-            "קל",
+            "",
             AssetManager.BG_IYUNA,
             false,
             digits,
@@ -78,7 +116,7 @@ public final class MapCatalog {
         );
     }
 
-    /** סדר גירסא — קשה */
+    /** סדר גירסא — שלישי */
     private static GameMap sederGirsa() {
         String[] digits = {
             "0000000000000001000",
@@ -106,8 +144,8 @@ public final class MapCatalog {
         return fromDigits(
             "girsa",
             "סדר גירסא",
-            "החצר הגדולה — המפה הראשונה",
-            "קשה",
+            "החצר הגדולה",
+            "",
             AssetManager.BG_GIRSA,
             false,
             digits,
@@ -116,9 +154,8 @@ public final class MapCatalog {
         );
     }
 
-    /** סדר שלישי */
-    private static GameMap sederShlishi() {
-        // Source legend (user): 1=wall, 0=open, 5=ghost, 8=player → catalog: 0/1/9/8
+    /** סדר ערב — רביעי, כובע */
+    private static GameMap sederErev() {
         String[] digits = {
             "0000000000000000000",
             "0001111100011111000",
@@ -143,53 +180,15 @@ public final class MapCatalog {
             "0000000000000000100"
         };
         return fromDigits(
-            "shlishi",
-            "סדר שלישי",
-            "מבוך סדר שלישי",
-            "בינוני",
+            "erev",
+            "סדר ערב",
+            "מבוך סדר ערב",
+            "",
             AssetManager.BG_SHLISHI,
             false,
             digits,
             null,
             -1, -1
-        );
-    }
-
-    /** סדר תפילה */
-    private static GameMap sederReviyi() {
-        String[] digits = {
-            "0000000000000001000",
-            "0111111011101111110",
-            "0100101010111010010",
-            "0100111111111110010",
-            "0111101010101011110",
-            "0001101010101011000",
-            "0111111111111111110",
-            "0101110110110111010",
-            "0111111100011111110",
-            "0001010100010101000",
-            "0111010111110101110",
-            "1111111111111111111",
-            "0001101010101011000",
-            "0001101110111011000",
-            "0111111111111111110",
-            "0101101010101011010",
-            "0110101011101010110",
-            "0111111110111111110",
-            "0100101010101010010",
-            "0111101111111011110",
-            "0000000000000001000"
-        };
-        return fromDigits(
-            "tefilla",
-            "סדר תפילה",
-            "מבוך סדר תפילה",
-            "בינוני",
-            AssetManager.BG_REVIYI,
-            false,
-            digits,
-            new int[][]{{11, 7}, {11, 8}, {11, 9}, {11, 10}},
-            17, 9
         );
     }
 

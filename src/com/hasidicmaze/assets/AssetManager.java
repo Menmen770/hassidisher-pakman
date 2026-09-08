@@ -81,12 +81,12 @@ public final class AssetManager {
         appIcon = loadUi("logo_ico.png");
     }
 
-    /** One collectible image per stage (0..3). */
+    /** One collectible per stage: שחרית→תפילין, עיונא→ספר1, גירסא→ספר2, ערב→כובע. */
     public Image bonusForStage(int stageIndex) {
         return switch (Math.floorMod(stageIndex, 4)) {
-            case 0 -> book1;
-            case 1 -> book2;
-            case 2 -> tefillinBag;
+            case 0 -> tefillinBag;
+            case 1 -> book1;
+            case 2 -> book2;
             default -> hat;
         };
     }
@@ -94,9 +94,9 @@ public final class AssetManager {
     /** Points for the stage collectible. */
     public int bonusPointsForStage(int stageIndex) {
         return switch (Math.floorMod(stageIndex, 4)) {
-            case 0 -> 100;
-            case 1 -> 300;
-            case 2 -> 500;
+            case 0 -> 500;
+            case 1 -> 100;
+            case 2 -> 300;
             default -> 700;
         };
     }

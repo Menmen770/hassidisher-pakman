@@ -34,7 +34,7 @@ public class MainFrame extends JFrame {
     private final JPanel gameHost = new JPanel(new BorderLayout());
 
     public MainFrame() {
-        super("pac-mandy");
+        super("Hassidisher Pakman");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setUndecorated(true);
         setResizable(true);
@@ -50,14 +50,14 @@ public class MainFrame extends JFrame {
             @Override
             public void onQuitToMenu() {
                 gamePanel.stop();
-                setTitle("pac-mandy");
+                setTitle("Hassidisher Pakman");
                 showScreen(Screen.MENU);
             }
 
             @Override
             public void onGameOver(int score, String mapId) {
                 gamePanel.stop();
-                setTitle("pac-mandy");
+                setTitle("Hassidisher Pakman");
                 if (scoreManager.isTopScore(score)) {
                     int rank = scoreManager.rankFor(score);
                     newRecordPanel.prepare(score, rank, mapId);
@@ -144,7 +144,7 @@ public class MainFrame extends JFrame {
         }
         showScreen(Screen.GAME);
         gamePanel.startSession(map, campaign);
-        setTitle("pac-mandy");
+        setTitle("Hassidisher Pakman");
         SwingUtilities.invokeLater(() -> {
             gamePanel.requestFocusInWindow();
             gamePanel.repaint();

@@ -9,8 +9,8 @@
     <version>2.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Hasidic Maze</name>
-    <description>Hasidic Maze — menu, maps, and high scores in Java Swing</description>
+    <name>Hassidisher Pakman</name>
+    <description>Hassidisher Pakman — Hebrew Pac-Man style maze in Java Swing</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

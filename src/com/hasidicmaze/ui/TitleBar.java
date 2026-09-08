@@ -169,7 +169,7 @@ public class TitleBar extends JPanel {
         g2.setFont(Theme.bodyBold(12));
         g2.setColor(Theme.CREAM_SOFT);
         FontMetrics fm = g2.getFontMetrics();
-        g2.drawString("PAC-MANDY", x, midY + fm.getAscent() / 2 - 1);
+        g2.drawString("Hassidisher Pakman", x, midY + fm.getAscent() / 2 - 1);
 
         // Logo-blue accent rail
         g2.setColor(Theme.LOGO_BLUE_DEEP);

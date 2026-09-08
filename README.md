@@ -1,4 +1,4 @@
-# Hasidic Maze
+# Hassidisher Pakman
 
 A Pac-Man–style maze game built with **Java Swing**, featuring Hebrew UI, custom bookshelf backgrounds, multiple map stages, and a high-score board.
 
@@ -71,7 +71,7 @@ javac -encoding UTF-8 -d bin src/com/hasidicmaze/*.java src/com/hasidicmaze/*/*.
 java -cp bin com.hasidicmaze.App
 ```
 
-Or use `run.bat` / the VS Code launch configuration **Run Hasidic Maze**.
+Or use `run.bat` / the VS Code launch configuration **Run Hassidisher Pakman**.
 
 ---
 
@@ -91,7 +91,7 @@ Special thanks to the original Pac-Man Java tutorial this project grew from:
 
 - [Kenny Yip Coding — Pacman in Java](https://youtu.be/lB_J-VNMVpE)
 
-The maze art, Hebrew menus, multi-stage flow, and UI redesign are original to Hasidic Maze.
+The maze art, Hebrew menus, multi-stage flow, and UI redesign are original to Hassidisher Pakman.
 
 —
 

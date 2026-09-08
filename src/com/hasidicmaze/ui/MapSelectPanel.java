@@ -8,6 +8,7 @@ import com.hasidicmaze.map.MapCatalog;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.ComponentOrientation;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -30,10 +31,10 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
-/** Stage select — clean vertical list matching the main-menu language. */
+/** Stage select — RTL vertical list, gold/navy language. */
 public class MapSelectPanel extends AtmospherePanel {
-    private static final int ROW_W = 420;
-    private static final int ROW_H = 64;
+    private static final int ROW_W = 440;
+    private static final int ROW_H = 62;
     private static final int GAP = 12;
 
     private final Consumer<GameMap> onPlay;
@@ -46,6 +47,7 @@ public class MapSelectPanel extends AtmospherePanel {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT));
         setBorder(new EmptyBorder(32, 48, 22, 48));
+        applyComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
 
         JPanel head = new JPanel(new BorderLayout(0, 4));
         head.setOpaque(false);
@@ -92,10 +94,7 @@ public class MapSelectPanel extends AtmospherePanel {
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 0));
         bottom.setOpaque(false);
         bottom.setBorder(new EmptyBorder(4, 0, 2, 0));
-
-        StyledButton back = new StyledButton("חזרה", StyledButton.Variant.GHOST);
-        size(back, 132, 44);
-        back.addActionListener(e -> navigate.accept(Screen.MENU));
+        bottom.applyComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
 
         playButton = new StyledButton("שחק", StyledButton.Variant.PRIMARY);
         size(playButton, 168, 50);
@@ -105,8 +104,13 @@ public class MapSelectPanel extends AtmospherePanel {
             }
         });
 
-        bottom.add(back);
+        StyledButton back = new StyledButton("חזרה", StyledButton.Variant.GHOST);
+        size(back, 132, 44);
+        back.addActionListener(e -> navigate.accept(Screen.MENU));
+
+        // RTL: first added sits on the right
         bottom.add(playButton);
+        bottom.add(back);
         add(bottom, BorderLayout.SOUTH);
         refresh();
     }
@@ -235,41 +239,39 @@ public class MapSelectPanel extends AtmospherePanel {
             g2.setStroke(new BasicStroke(on ? 2.2f : 1.6f));
             g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
 
-            // Number
+            // RTL: number chip on the RIGHT
             String num = String.format("%02d", index + 1);
             g2.setFont(Theme.mono(15));
             FontMetrics nm = g2.getFontMetrics();
             int chip = 34;
-            int cx = 14;
-            int cy = (h - chip) / 2;
+            int chipX = w - chip - 14;
+            int chipY = (h - chip) / 2;
             g2.setColor(on ? Theme.withAlpha(Theme.BG_BARK, 50) : Theme.withAlpha(Theme.BG_GOLD, 45));
-            g2.fillRoundRect(cx, cy, chip, chip, 12, 12);
+            g2.fillRoundRect(chipX, chipY, chip, chip, 12, 12);
             g2.setColor(on ? Theme.BG_BARK : Theme.BG_GOLD);
-            g2.drawString(num, cx + (chip - nm.stringWidth(num)) / 2, cy + 23);
+            g2.drawString(num, chipX + (chip - nm.stringWidth(num)) / 2, chipY + 23);
 
-            // Title + difficulty in one clear row stack
+            // Title — right-aligned, next to the chip
             String name = map.getTitle();
-            g2.setFont(Theme.bodyBold(16));
+            g2.setFont(Theme.bodyBold(17));
             FontMetrics fm = g2.getFontMetrics();
-            int textX = 60;
-            int maxText = w - 120;
+            int maxText = w - chip - 90;
             while (fm.stringWidth(name) > maxText && g2.getFont().getSize() > 13) {
                 g2.setFont(Theme.bodyBold(g2.getFont().getSize() - 1));
                 fm = g2.getFontMetrics();
             }
+            int titleX = chipX - 14 - fm.stringWidth(name);
             g2.setColor(map.isLocked() ? Theme.MUTED_DARK : (on ? Theme.BG_BARK : Theme.CREAM));
-            g2.drawString(name, textX, h / 2 - 2);
+            g2.drawString(name, titleX, (h + fm.getAscent() - fm.getDescent()) / 2);
 
-            g2.setFont(Theme.body(12));
-            g2.setColor(on ? Theme.withAlpha(Theme.BG_BARK, 180) : Theme.BG_STEEL);
-            g2.drawString(map.getDifficulty(), textX, h / 2 + 16);
-
-            // Prize
+            // Prize icon on the LEFT
             Image prize = AssetManager.get().bonusForStage(index);
             if (prize != null) {
                 int icon = 30;
-                int ix = w - icon - 18;
+                int ix = 16;
                 int iy = (h - icon) / 2;
+                g2.setColor(Theme.withAlpha(on ? Theme.BG_BARK : Theme.BG_NAVY, on ? 40 : 140));
+                g2.fillRoundRect(ix - 4, iy - 4, icon + 8, icon + 8, 12, 12);
                 g2.drawImage(prize, ix, iy, icon, icon, null);
             }
 
